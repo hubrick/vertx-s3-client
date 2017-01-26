@@ -2,6 +2,9 @@
 <ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
     <Name>bucket</Name>
     <Prefix></Prefix>
+    <ContinuationToken>
+        14HF6Dfbr92F1EYlZIrMwxPYKQl5lD/mbwiw5+Nlrn1lYIZX3YGzo16Dgz+dxbxFeNGmLsnzwnbbuQM0CMl0krVwh8TBj8nCmNtq/iQCK6gzln8z3U4C71Mh2HyEMHcMgrZGR/akosVql7/AIctj6rA==
+    </ContinuationToken>
     <NextContinuationToken>
         1l4ws/asdasgrefjASDWETg+Im1owOKVqN06BsizmyNDwbG3pRp3wcLWuv36lDxSItN1OgMnt6ws8E4z7pVllTEqE8F4cZ6B7c/rRvJd9HXqtREGJiVX88t2RZJ6be9AHD6B/hQjfLlzFL1qNDxGBg==
     </NextContinuationToken>

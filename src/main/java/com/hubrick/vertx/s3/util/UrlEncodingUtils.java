@@ -22,10 +22,10 @@ import org.apache.http.message.BasicNameValuePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -40,28 +40,21 @@ public class UrlEncodingUtils {
     private static final String QUERY_CHAR = "?"; //$NON-NLS-1$
     private static final String ANCHOR_CHAR = "#"; //$NON-NLS-1$
 
-    public static String addParamsToUrl(String url, Map<String, String> params) {
+    public static String addParamsSortedToUrl(String url, Map<String, String> params) {
         checkNotNull(url, "url must not be null");
         checkNotNull(!url.isEmpty(), "url must not be empty");
         checkNotNull(params, "params must not be null");
         checkNotNull(!params.isEmpty(), "params must not be empty");
 
-        try {
-            final String baseUrl = extractBaseUrl(url);
-            final String urlParams = baseUrl.equals(url) ? "" : url.replace(baseUrl + "?", "");
-            final List<NameValuePair> nameValuePairs = URLEncodedUtils.parse(urlParams, Charsets.UTF_8);
+        final String baseUrl = extractBaseUrl(url);
+        final String urlParams = baseUrl.equals(url) ? "" : url.replace(baseUrl + "?", "");
+        final List<NameValuePair> nameValuePairs = URLEncodedUtils.parse(urlParams, Charsets.UTF_8);
 
-            for (Map.Entry<String, String> paramToUrlEncode : params.entrySet()) {
-                nameValuePairs.add(new BasicNameValuePair(paramToUrlEncode.getKey(), URLEncoder.encode(paramToUrlEncode.getValue(), "UTF-8")));
-            }
-
-            return baseUrl + "?" + URLEncodedUtils.format(nameValuePairs, Charsets.UTF_8);
-        } catch (UnsupportedEncodingException e) {
-            // This can not happen it's hardcoded
-            log.error("Unexpected error", e);
+        for (Map.Entry<String, String> paramToUrlEncode : params.entrySet().stream().sorted(Comparator.comparing(Map.Entry::getKey)).collect(Collectors.toList())) {
+            nameValuePairs.add(new BasicNameValuePair(paramToUrlEncode.getKey(), paramToUrlEncode.getValue()));
         }
 
-        return null;
+        return baseUrl + "?" + URLEncodedUtils.format(nameValuePairs, Charsets.UTF_8);
     }
 
     public static String extractBaseUrl(String url) {

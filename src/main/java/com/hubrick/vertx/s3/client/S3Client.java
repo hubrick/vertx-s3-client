@@ -185,7 +185,7 @@ public class S3Client {
                            ListBucketRequest listBucketRequest,
                            Handler<ListBucketResult> handler,
                            Handler<Throwable> exceptionHandler) {
-        final S3ClientRequest request = createListBucketRequest(bucket, listBucketRequest, new BodyResponseHandler<>(jaxbUnmarshaller, handler, exceptionHandler));
+        final S3ClientRequest request = createListBucketRequest(bucket, listBucketRequest, new BodyResponseHandler<>("listBucket", jaxbUnmarshaller, handler, exceptionHandler));
         request.exceptionHandler(exceptionHandler);
         request.end();
     }
@@ -262,7 +262,7 @@ public class S3Client {
                                                     Handler<HttpClientResponse> handler) {
 
         final Map<String, String> queryParams = populateListBucketQueryParams(listBucketRequest);
-        final HttpClientRequest httpRequest = client.get(UrlEncodingUtils.addParamsToUrl("/" + bucket, queryParams), handler);
+        final HttpClientRequest httpRequest = client.get(UrlEncodingUtils.addParamsSortedToUrl("/" + bucket, queryParams), handler);
 
         final S3ClientRequest s3ClientRequest = new S3ClientRequest(
                 "GET",
@@ -420,11 +420,13 @@ public class S3Client {
 
     private class BodyResponseHandler<T> implements Handler<HttpClientResponse> {
 
+        private final String action;
         private final Unmarshaller jaxbUnmarshaller;
         private final Handler<T> successHandler;
         private final Handler<Throwable> exceptionHandler;
 
-        private BodyResponseHandler(Unmarshaller jaxbUnmarshaller, Handler<T> successHandler, Handler<Throwable> exceptionHandler) {
+        private BodyResponseHandler(String action, Unmarshaller jaxbUnmarshaller, Handler<T> successHandler, Handler<Throwable> exceptionHandler) {
+            this.action = action;
             this.jaxbUnmarshaller = jaxbUnmarshaller;
             this.successHandler = successHandler;
             this.exceptionHandler = exceptionHandler;
@@ -445,7 +447,7 @@ public class S3Client {
                                         event.statusCode(),
                                         event.statusMessage(),
                                         (ErrorResponse) jaxbUnmarshaller.unmarshal(convertToSaxSource(buffer.getBytes())),
-                                        "Error occurred during on 'listBucket'"
+                                        "Error occurred on '" + action + "'"
                                 )
                         );
                     } else {

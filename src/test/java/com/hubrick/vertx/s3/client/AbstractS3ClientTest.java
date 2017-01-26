@@ -342,7 +342,8 @@ public abstract class AbstractS3ClientTest extends AbstractFunctionalTest {
         final Async async = testContext.async();
         s3Client.listBucket(
                 "sourceBucket",
-                new ListBucketRequest(),
+                new ListBucketRequest()
+                        .withContinuationToken("14HF6Dfbr92F1EYlZIrMwxPYKQl5lD/mbwiw5+Nlrn1lYIZX3YGzo16Dgz+dxbxFeNGmLsnzwnbbuQM0CMl0krVwh8TBj8nCmNtq/iQCK6gzln8z3U4C71Mh2HyEMHcMgrZGR/akosVql7/AIctj6rA=="),
                 (listBucketResult) -> {
                     assertThat(testContext, listBucketResult, notNullValue());
                     assertThat(testContext, listBucketResult.getContentsList(), hasSize(5));
@@ -359,7 +360,8 @@ public abstract class AbstractS3ClientTest extends AbstractFunctionalTest {
         final Async async = testContext.async();
         s3Client.listBucket(
                 "sourceBucket",
-                new ListBucketRequest(),
+                new ListBucketRequest()
+                        .withContinuationToken("14HF6Dfbr92F1EYlZIrMwxPYKQl5lD/mbwiw5+Nlrn1lYIZX3YGzo16Dgz+dxbxFeNGmLsnzwnbbuQM0CMl0krVwh8TBj8nCmNtq/iQCK6gzln8z3U4C71Mh2HyEMHcMgrZGR/akosVql7/AIctj6rA=="),
                 (result) -> {
                     testContext.fail("Exceptions should be thrown");
                 },

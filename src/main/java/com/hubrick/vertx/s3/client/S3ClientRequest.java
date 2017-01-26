@@ -30,6 +30,8 @@ import io.vertx.core.http.HttpVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.time.Clock;
 import java.time.ZonedDateTime;
 import java.util.Map;
@@ -356,32 +358,33 @@ public class S3ClientRequest implements HttpClientRequest {
 
         authenticationHeaderSet = true;
 
-        final AWS4SignatureBuilder signatureBuilder = AWS4SignatureBuilder
-                .builder(ZonedDateTime.now(clock), region, serviceName)
-                .httpRequestMethod(method)
-                .canonicalUri(request.path())
-                .canonicalQueryString(request.query())
-                .awsSecretKey(awsSecretKey);
-
-        headers().set(S3Headers.DATE.getValue(), signatureBuilder.makeSignatureFormattedDate());
-
-        for (Map.Entry<String, String> entry : headers()) {
-            signatureBuilder.header(entry.getKey(), entry.getValue());
-        }
-
-        if (signPayload) {
-            signatureBuilder.payload(payload.getBytes());
-            headers().set(S3Headers.CONTENT_SHA.getValue(), signatureBuilder.getPayloadHash());
-        } else {
-            headers().set(S3Headers.CONTENT_SHA.getValue(), AWS4SignatureBuilder.UNSIGNED_PAYLOAD);
-        }
-
-        log.info("S3 toSign:\n{}", signatureBuilder.makeCanonicalRequest());
-
         try {
+            final String decodedQueryString = request.query() != null ? URLDecoder.decode(request.query(), "UTF-8") : null;
+            final AWS4SignatureBuilder signatureBuilder = AWS4SignatureBuilder
+                    .builder(ZonedDateTime.now(clock), region, serviceName)
+                    .httpRequestMethod(method)
+                    .canonicalUri(request.path())
+                    .canonicalQueryString(decodedQueryString)
+                    .awsSecretKey(awsSecretKey);
+
+            headers().set(S3Headers.DATE.getValue(), signatureBuilder.makeSignatureFormattedDate());
+
+            for (Map.Entry<String, String> entry : headers()) {
+                signatureBuilder.header(entry.getKey(), entry.getValue());
+            }
+
+            if (signPayload) {
+                signatureBuilder.payload(payload.getBytes());
+                headers().set(S3Headers.CONTENT_SHA.getValue(), signatureBuilder.getPayloadHash());
+            } else {
+                headers().set(S3Headers.CONTENT_SHA.getValue(), AWS4SignatureBuilder.UNSIGNED_PAYLOAD);
+            }
+
+            log.info("S3 toSign:\n{}", signatureBuilder.makeCanonicalRequest());
 
             headers().set("Authorization", signatureBuilder.buildAuthorizationHeaderValue(awsAccessKey));
-
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
         } catch (Exception e) {
             // This will totally fail,
             // but downstream users can handle it

@@ -37,6 +37,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -140,7 +141,7 @@ public class AWS4SignatureBuilder {
         }
 
         this.canonicalQueryString = parameters.stream()
-                .sorted((kv1, kv2) -> kv1.getKey().compareTo(kv2.getKey()))
+                .sorted(Comparator.comparing(KeyValue::getKey))
                 .map(kv -> queryParameterEscape(kv.getKey()) + "=" + queryParameterEscape(kv.getValue()))
                 .collect(Collectors.joining("&"));
 

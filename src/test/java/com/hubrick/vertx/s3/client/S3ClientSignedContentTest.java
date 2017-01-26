@@ -128,10 +128,13 @@ public class S3ClientSignedContentTest extends AbstractS3ClientTest {
     @Test
     public void testListBucket(TestContext testContext) throws IOException {
         mockListBucket(
-                ImmutableMap.of("list-type", Collections.singletonList("2")),
+                ImmutableMap.of(
+                        "list-type", Collections.singletonList("2"),
+                        "continuation-token", Collections.singletonList("14HF6Dfbr92F1EYlZIrMwxPYKQl5lD/mbwiw5+Nlrn1lYIZX3YGzo16Dgz+dxbxFeNGmLsnzwnbbuQM0CMl0krVwh8TBj8nCmNtq/iQCK6gzln8z3U4C71Mh2HyEMHcMgrZGR/akosVql7/AIctj6rA==")
+                ),
                 Header.header("X-Amz-Date", "20161110T130214Z"),
                 Header.header("X-Amz-Content-Sha256", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"),
-                Header.header("Authorization", "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20161110/us-east-1/service/aws4_request, SignedHeaders=host;x-amz-date, Signature=6f159fdbd665e8913f505d000ca51bb762fc48d021085f885618203ed2d47f02")
+                Header.header("Authorization", "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20161110/us-east-1/service/aws4_request, SignedHeaders=host;x-amz-date, Signature=62c51118953e03169f4d723c3ffc4fdcc3a30831b898f962dffd423264dae75b")
         );
 
         verifyListBucket(testContext);
@@ -140,10 +143,13 @@ public class S3ClientSignedContentTest extends AbstractS3ClientTest {
     @Test
     public void testListBucketError(TestContext testContext) throws IOException {
         mockListBucketErrorResponse(
-                ImmutableMap.of("list-type", Collections.singletonList("2")),
+                ImmutableMap.of(
+                        "list-type", Collections.singletonList("2"),
+                        "continuation-token", Collections.singletonList("14HF6Dfbr92F1EYlZIrMwxPYKQl5lD/mbwiw5+Nlrn1lYIZX3YGzo16Dgz+dxbxFeNGmLsnzwnbbuQM0CMl0krVwh8TBj8nCmNtq/iQCK6gzln8z3U4C71Mh2HyEMHcMgrZGR/akosVql7/AIctj6rA==")
+                ),
                 Header.header("X-Amz-Date", "20161110T130214Z"),
                 Header.header("X-Amz-Content-Sha256", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"),
-                Header.header("Authorization", "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20161110/us-east-1/service/aws4_request, SignedHeaders=host;x-amz-date, Signature=6f159fdbd665e8913f505d000ca51bb762fc48d021085f885618203ed2d47f02")
+                Header.header("Authorization", "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20161110/us-east-1/service/aws4_request, SignedHeaders=host;x-amz-date, Signature=62c51118953e03169f4d723c3ffc4fdcc3a30831b898f962dffd423264dae75b")
         );
 
         verifyListBucketErrorResponse(testContext);
