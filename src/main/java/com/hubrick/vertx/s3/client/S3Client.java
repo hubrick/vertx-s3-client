@@ -28,6 +28,7 @@ import com.hubrick.vertx.s3.model.Owner;
 import com.hubrick.vertx.s3.model.filter.NamespaceFilter;
 import com.hubrick.vertx.s3.util.UrlEncodingUtils;
 import io.vertx.core.Handler;
+import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
@@ -139,48 +140,43 @@ public class S3Client {
         return globalTimeout;
     }
 
-    // Direct call (async)
-    // -----------
-
-    // GET (bucket, key) -> handler(Data)
     public void get(String bucket,
                     String key,
+                    MultiMap headers,
                     Handler<HttpClientResponse> handler,
                     Handler<Throwable> exceptionHandler) {
-        S3ClientRequest request = createGetRequest(bucket, key, handler);
+        final S3ClientRequest request = createGetRequest(bucket, key, headers, new StreamResponseHandler(jaxbUnmarshaller, handler, exceptionHandler));
         request.exceptionHandler(exceptionHandler);
         request.end();
     }
 
-    // PUT (bucket, key, data) -> handler(Response)
     public void put(String bucket,
                     String key,
+                    MultiMap headers,
                     Buffer data,
                     Handler<HttpClientResponse> handler,
                     Handler<Throwable> exceptionHandler) {
-        S3ClientRequest request = createPutRequest(bucket, key, handler);
+        final S3ClientRequest request = createPutRequest(bucket, key, headers, new StreamResponseHandler(jaxbUnmarshaller, handler, exceptionHandler));
         request.exceptionHandler(exceptionHandler);
         request.end(data);
     }
 
-    // PUT (bucket, key, data) -> handler(Response)
     public void copy(String sourceBucket,
                      String sourceKey,
                      String destinationBucket,
                      String destinationKey,
                      Handler<HttpClientResponse> handler,
                      Handler<Throwable> exceptionHandler) {
-        S3ClientRequest request = createCopyRequest(sourceBucket, sourceKey, destinationBucket, destinationKey, handler);
+        final S3ClientRequest request = createCopyRequest(sourceBucket, sourceKey, destinationBucket, destinationKey, new StreamResponseHandler(jaxbUnmarshaller, handler, exceptionHandler));
         request.exceptionHandler(exceptionHandler);
         request.end();
     }
 
-    // DELETE (bucket, key) -> handler(Response)
     public void delete(String bucket,
                        String key,
                        Handler<HttpClientResponse> handler,
                        Handler<Throwable> exceptionHandler) {
-        S3ClientRequest request = createDeleteRequest(bucket, key, handler);
+        final S3ClientRequest request = createDeleteRequest(bucket, key, new StreamResponseHandler(jaxbUnmarshaller, handler, exceptionHandler));
         request.exceptionHandler(exceptionHandler);
         request.end();
     }
@@ -189,45 +185,18 @@ public class S3Client {
                            ListBucketRequest listBucketRequest,
                            Handler<ListBucketResult> handler,
                            Handler<Throwable> exceptionHandler) {
-        S3ClientRequest request = createListBucketRequest(bucket, listBucketRequest, event -> {
-            event.bodyHandler(buffer -> {
-                try {
-                    if(event.statusCode() / 100 != 2) {
-                        log.warn("Error occurred. Status: {}, Message: {}", event.statusCode(), event.statusMessage());
-                        if(log.isDebugEnabled()) {
-                            log.debug("Response: {}", new String(buffer.getBytes(), Charsets.UTF_8));
-                        }
-
-                        exceptionHandler.handle(
-                                new HttpErrorException(
-                                        event.statusCode(),
-                                        event.statusMessage(),
-                                        (ErrorResponse) jaxbUnmarshaller.unmarshal(convertToSaxSource(buffer.getBytes())),
-                                        "Error occurred during on 'listBucket'"
-                                )
-                        );
-                    } else {
-                        handler.handle((ListBucketResult) jaxbUnmarshaller.unmarshal(convertToSaxSource(buffer.getBytes())));
-                    }
-                } catch (Exception e) {
-                    exceptionHandler.handle(e);
-                }
-            });
-        });
+        final S3ClientRequest request = createListBucketRequest(bucket, listBucketRequest, new BodyResponseHandler<>(jaxbUnmarshaller, handler, exceptionHandler));
         request.exceptionHandler(exceptionHandler);
         request.end();
     }
 
-    // Create requests which can be customized
-    // ---------------------------------------
-
-    // create PUT -> requestObject (which you can do stuff with)
-    public S3ClientRequest createPutRequest(String bucket,
-                                            String key,
-                                            Handler<HttpClientResponse> handler) {
+    private S3ClientRequest createPutRequest(String bucket,
+                                             String key,
+                                             MultiMap headers,
+                                             Handler<HttpClientResponse> handler) {
         HttpClientRequest httpRequest = client.put("/" + bucket + "/" + key,
                 handler);
-        return new S3ClientRequest(
+        final S3ClientRequest s3ClientRequest = new S3ClientRequest(
                 "PUT",
                 awsRegion,
                 awsServiceName,
@@ -240,19 +209,16 @@ public class S3Client {
                 .setTimeout(globalTimeout)
                 .putHeader("Host", hostname);
 
+        s3ClientRequest.headers().addAll(headers);
+        return s3ClientRequest;
     }
 
-    // create PUT -> requestObject (which you can do stuff with)
-    public S3ClientRequest createCopyRequest(String sourceBucket,
-                                             String sourceKey,
-                                             String destinationBucket,
-                                             String destinationKey,
-                                             Handler<HttpClientResponse> handler) {
-        final HttpClientRequest httpRequest = client.put(
-                "/" + destinationBucket + "/" + destinationKey,
-                handler
-        );
-
+    private S3ClientRequest createCopyRequest(String sourceBucket,
+                                              String sourceKey,
+                                              String destinationBucket,
+                                              String destinationKey,
+                                              Handler<HttpClientResponse> handler) {
+        final HttpClientRequest httpRequest = client.put("/" + destinationBucket + "/" + destinationKey, handler);
         final S3ClientRequest s3ClientRequest = new S3ClientRequest(
                 "PUT",
                 awsRegion,
@@ -269,13 +235,12 @@ public class S3Client {
         return s3ClientRequest.putHeader(S3Headers.COPY_SOURCE_HEADER.getValue(), "/" + sourceBucket + "/" + sourceKey);
     }
 
-    // create GET -> request Object
-    public S3ClientRequest createGetRequest(String bucket,
-                                            String key,
-                                            Handler<HttpClientResponse> handler) {
-        HttpClientRequest httpRequest = client.get("/" + bucket + "/" + key,
-                handler);
-        return new S3ClientRequest(
+    private S3ClientRequest createGetRequest(String bucket,
+                                             String key,
+                                             MultiMap headers,
+                                             Handler<HttpClientResponse> handler) {
+        final HttpClientRequest httpRequest = client.get("/" + bucket + "/" + key, handler);
+        final S3ClientRequest s3ClientRequest = new S3ClientRequest(
                 "GET",
                 awsRegion,
                 awsServiceName,
@@ -287,6 +252,9 @@ public class S3Client {
         )
                 .setTimeout(globalTimeout)
                 .putHeader("Host", hostname);
+
+        s3ClientRequest.headers().addAll(headers);
+        return s3ClientRequest;
     }
 
     private S3ClientRequest createListBucketRequest(String bucket,
@@ -341,12 +309,10 @@ public class S3Client {
         return queryParams;
     }
 
-    // create DELETE -> request Object
-    public S3ClientRequest createDeleteRequest(String bucket,
+    private S3ClientRequest createDeleteRequest(String bucket,
                                                String key,
                                                Handler<HttpClientResponse> handler) {
-        HttpClientRequest httpRequest = client.delete("/" + bucket + "/" + key,
-                handler);
+        final HttpClientRequest httpRequest = client.delete("/" + bucket + "/" + key, handler);
         return new S3ClientRequest(
                 "DELETE",
                 awsRegion,
@@ -359,7 +325,6 @@ public class S3Client {
         )
                 .setTimeout(globalTimeout)
                 .putHeader("Host", hostname);
-
     }
 
     private JAXBContext createJAXBContext() {
@@ -411,5 +376,89 @@ public class S3Client {
 
         //Create a SAXSource specifying the filter
         return new SAXSource(inFilter, inputSource);
+    }
+
+    private class StreamResponseHandler implements Handler<HttpClientResponse> {
+
+        private final Unmarshaller jaxbUnmarshaller;
+        private final Handler<HttpClientResponse> successHandler;
+        private final Handler<Throwable> exceptionHandler;
+
+        private StreamResponseHandler(Unmarshaller jaxbUnmarshaller, Handler<HttpClientResponse> successHandler, Handler<Throwable> exceptionHandler) {
+            this.jaxbUnmarshaller = jaxbUnmarshaller;
+            this.successHandler = successHandler;
+            this.exceptionHandler = exceptionHandler;
+        }
+
+        @Override
+        public void handle(HttpClientResponse event) {
+            if (event.statusCode() / 100 != 2) {
+                event.bodyHandler(buffer -> {
+                    try {
+                        log.warn("Error occurred. Status: {}, Message: {}", event.statusCode(), event.statusMessage());
+                        if (log.isDebugEnabled()) {
+                            log.debug("Response: {}", new String(buffer.getBytes(), Charsets.UTF_8));
+                        }
+
+                        exceptionHandler.handle(
+                                new HttpErrorException(
+                                        event.statusCode(),
+                                        event.statusMessage(),
+                                        (ErrorResponse) jaxbUnmarshaller.unmarshal(convertToSaxSource(buffer.getBytes())),
+                                        "Error occurred during on 'listBucket'"
+                                )
+                        );
+                    } catch (Exception e) {
+                        exceptionHandler.handle(e);
+                    }
+                });
+            } else {
+                successHandler.handle(event);
+            }
+        }
+    }
+
+    private class BodyResponseHandler<T> implements Handler<HttpClientResponse> {
+
+        private final Unmarshaller jaxbUnmarshaller;
+        private final Handler<T> successHandler;
+        private final Handler<Throwable> exceptionHandler;
+
+        private BodyResponseHandler(Unmarshaller jaxbUnmarshaller, Handler<T> successHandler, Handler<Throwable> exceptionHandler) {
+            this.jaxbUnmarshaller = jaxbUnmarshaller;
+            this.successHandler = successHandler;
+            this.exceptionHandler = exceptionHandler;
+        }
+
+        @Override
+        public void handle(HttpClientResponse event) {
+            event.bodyHandler(buffer -> {
+                try {
+                    if (event.statusCode() / 100 != 2) {
+                        log.warn("Error occurred. Status: {}, Message: {}", event.statusCode(), event.statusMessage());
+                        if (log.isDebugEnabled()) {
+                            log.debug("Response: {}", new String(buffer.getBytes(), Charsets.UTF_8));
+                        }
+
+                        exceptionHandler.handle(
+                                new HttpErrorException(
+                                        event.statusCode(),
+                                        event.statusMessage(),
+                                        (ErrorResponse) jaxbUnmarshaller.unmarshal(convertToSaxSource(buffer.getBytes())),
+                                        "Error occurred during on 'listBucket'"
+                                )
+                        );
+                    } else {
+                        if (log.isDebugEnabled()) {
+                            log.debug("Request successful. Status: {}, Message: {}", event.statusCode(), event.statusMessage());
+                            log.debug("Response: {}", new String(buffer.getBytes(), Charsets.UTF_8));
+                        }
+                        successHandler.handle((T) jaxbUnmarshaller.unmarshal(convertToSaxSource(buffer.getBytes())));
+                    }
+                } catch (Exception e) {
+                    exceptionHandler.handle(e);
+                }
+            });
+        }
     }
 }

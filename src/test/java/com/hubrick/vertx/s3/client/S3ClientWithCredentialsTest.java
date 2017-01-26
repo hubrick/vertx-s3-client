@@ -19,6 +19,8 @@ import io.vertx.ext.unit.TestContext;
 import org.junit.Test;
 import org.mockserver.model.Header;
 
+import java.io.IOException;
+
 /**
  * @author marcus
  * @since 1.0.0
@@ -31,7 +33,7 @@ public class S3ClientWithCredentialsTest extends AbstractS3ClientTest {
     }
 
     @Test
-    public void testGet(TestContext testContext) {
+    public void testGet(TestContext testContext) throws IOException {
         mockGet(
                 Header.header("X-Amz-Date", "20161110T130214Z"),
                 Header.header("X-Amz-Content-Sha256", "UNSIGNED-PAYLOAD"),
@@ -43,7 +45,7 @@ public class S3ClientWithCredentialsTest extends AbstractS3ClientTest {
     }
 
     @Test
-    public void testPut(TestContext testContext) {
+    public void testPut(TestContext testContext) throws IOException {
         mockPut(
                 Header.header("X-Amz-Date", "20161110T130214Z"),
                 Header.header("X-Amz-Content-Sha256", "UNSIGNED-PAYLOAD"),
@@ -54,7 +56,7 @@ public class S3ClientWithCredentialsTest extends AbstractS3ClientTest {
     }
 
     @Test
-    public void testDelete(TestContext testContext) {
+    public void testDelete(TestContext testContext) throws IOException {
         mockDelete(
                 Header.header("X-Amz-Date", "20161110T130214Z"),
                 Header.header("X-Amz-Content-Sha256", "UNSIGNED-PAYLOAD"),
@@ -65,7 +67,7 @@ public class S3ClientWithCredentialsTest extends AbstractS3ClientTest {
     }
 
     @Test
-    public void testCopy(TestContext testContext) {
+    public void testCopy(TestContext testContext) throws IOException {
         mockCopy(
                 Header.header("X-Amz-Date", "20161110T130214Z"),
                 Header.header("X-Amz-Content-Sha256", "UNSIGNED-PAYLOAD"),

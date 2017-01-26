@@ -20,17 +20,21 @@ import com.hubrick.vertx.s3.AbstractFunctionalTest;
 import com.hubrick.vertx.s3.S3TestCredentials;
 import com.hubrick.vertx.s3.exception.HttpErrorException;
 import com.hubrick.vertx.s3.model.ListBucketRequest;
+import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
+import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Before;
 import org.mockserver.model.Header;
+import org.mockserver.model.HttpRequest;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -78,25 +82,32 @@ public abstract class AbstractS3ClientTest extends AbstractFunctionalTest {
         clientOptions.setAwsSecretKey(S3TestCredentials.AWS_SECRET_KEY);
     }
 
-    void mockGet(Header... expectedHeaders) {
-        getMockServerClient().when(
-                request()
-                        .withMethod("GET")
-                        .withPath("/bucket/key")
-                        .withHeaders(expectedHeaders)
-
-        ).respond(
-                response()
-                        .withStatusCode(200)
-                        .withHeader(Header.header("Content-Type", "application/json;charset=UTF-8"))
-                        .withBody("response")
+    void mockGet(Header... expectedHeaders) throws IOException {
+        mock(
+                Collections.emptyMap(),
+                "GET",
+                "/bucket/key",
+                200,
+                "response".getBytes(),
+                expectedHeaders
         );
     }
 
 
+    void mockGetErrorResponse(Header... expectedHeaders) throws IOException {
+        mock(
+                Collections.emptyMap(),
+                "GET",
+                "/bucket/key",
+                403,
+                Resources.toByteArray(Resources.getResource(AbstractS3ClientTest.class, "/response/errorResponse.xml")),
+                expectedHeaders
+        );
+    }
+
     void verifyGet(TestContext testContext) {
         final Async async = testContext.async();
-        s3Client.get("bucket", "key",
+        s3Client.get("bucket", "key", MultiMap.caseInsensitiveMultiMap(),
                 (response) -> {
                     assertThat(testContext, response.statusCode(), is(200));
 
@@ -109,26 +120,52 @@ public abstract class AbstractS3ClientTest extends AbstractFunctionalTest {
                 testContext::fail);
     }
 
-    void mockPut(Header... expectedHeaders) {
-        getMockServerClient().when(
-                request()
-                        .withMethod("PUT")
-                        .withPath("/bucket/key")
-                        .withHeaders(expectedHeaders)
-                        .withBody("test")
+    void verifyGetErrorResponse(final TestContext testContext) {
 
-        ).respond(
-                response()
-                        .withStatusCode(200)
-                        .withHeader(Header.header("Content-Type", "application/json;charset=UTF-8"))
-                        .withBody("response")
+        final Async async = testContext.async();
+        s3Client.get("bucket", "key", MultiMap.caseInsensitiveMultiMap(),
+                (result) -> {
+                    testContext.fail("Exceptions should be thrown");
+                },
+                error -> {
+                    assertThat(testContext, error, instanceOf(HttpErrorException.class));
+
+                    final HttpErrorException httpErrorException = (HttpErrorException) error;
+                    assertThat(testContext, httpErrorException.getStatus(), is(403));
+                    assertThat(testContext, httpErrorException.getErrorResponse().getCode(), is("SignatureDoesNotMatch"));
+                    async.complete();
+                }
+        );
+    }
+
+    void mockPut(Header... expectedHeaders) throws IOException {
+        mock(
+                Collections.emptyMap(),
+                "PUT",
+                "/bucket/key",
+                200,
+                "test".getBytes(),
+                "response".getBytes(),
+                expectedHeaders
+        );
+    }
+
+    void mockPutErrorResponse(Header... expectedHeaders) throws IOException {
+        mock(
+                Collections.emptyMap(),
+                "PUT",
+                "/bucket/key",
+                403,
+                "test".getBytes(),
+                Resources.toByteArray(Resources.getResource(AbstractS3ClientTest.class, "/response/errorResponse.xml")),
+                expectedHeaders
         );
     }
 
     void verifyPut(final TestContext testContext) {
 
         final Async async = testContext.async();
-        s3Client.put("bucket", "key",
+        s3Client.put("bucket", "key", MultiMap.caseInsensitiveMultiMap(),
                 Buffer.buffer("test"),
                 (response) -> {
                     assertThat(testContext, response.statusCode(), is(200));
@@ -142,18 +179,44 @@ public abstract class AbstractS3ClientTest extends AbstractFunctionalTest {
                 testContext::fail);
     }
 
-    void mockDelete(Header... expectedHeaders) {
-        getMockServerClient().when(
-                request()
-                        .withMethod("DELETE")
-                        .withPath("/bucket/key")
-                        .withHeaders(expectedHeaders)
+    void verifyPutErrorResponse(final TestContext testContext) {
 
-        ).respond(
-                response()
-                        .withStatusCode(200)
-                        .withHeader(Header.header("Content-Type", "application/json;charset=UTF-8"))
-                        .withBody("response")
+        final Async async = testContext.async();
+        s3Client.put("bucket", "key", MultiMap.caseInsensitiveMultiMap(),
+                Buffer.buffer("test"),
+                (result) -> {
+                    testContext.fail("Exceptions should be thrown");
+                },
+                error -> {
+                    assertThat(testContext, error, instanceOf(HttpErrorException.class));
+
+                    final HttpErrorException httpErrorException = (HttpErrorException) error;
+                    assertThat(testContext, httpErrorException.getStatus(), is(403));
+                    assertThat(testContext, httpErrorException.getErrorResponse().getCode(), is("SignatureDoesNotMatch"));
+                    async.complete();
+                }
+        );
+    }
+
+    void mockDelete(Header... expectedHeaders) throws IOException {
+        mock(
+                Collections.emptyMap(),
+                "DELETE",
+                "/bucket/key",
+                200,
+                "response".getBytes(),
+                expectedHeaders
+        );
+    }
+
+    void mockDeleteErrorResponse(Header... expectedHeaders) throws IOException {
+        mock(
+                Collections.emptyMap(),
+                "DELETE",
+                "/bucket/key",
+                403,
+                Resources.toByteArray(Resources.getResource(AbstractS3ClientTest.class, "/response/errorResponse.xml")),
+                expectedHeaders
         );
     }
 
@@ -173,19 +236,44 @@ public abstract class AbstractS3ClientTest extends AbstractFunctionalTest {
                 testContext::fail);
     }
 
-    void mockCopy(Header... expectedHeaders) {
-        getMockServerClient().when(
-                request()
-                        .withMethod("PUT")
-                        .withPath("/destinationBucket/destinationKey")
-                        .withHeaders(expectedHeaders)
-                        .withHeader("X-Amz-Copy-Source", "/sourceBucket/sourceKey")
+    void verifyDeleteErrorResponse(final TestContext testContext) {
 
-        ).respond(
-                response()
-                        .withStatusCode(200)
-                        .withHeader(Header.header("Content-Type", "application/json;charset=UTF-8"))
-                        .withBody("response")
+        final Async async = testContext.async();
+        s3Client.delete(
+                "bucket", "key",
+                (result) -> {
+                    testContext.fail("Exceptions should be thrown");
+                },
+                error -> {
+                    assertThat(testContext, error, instanceOf(HttpErrorException.class));
+
+                    final HttpErrorException httpErrorException = (HttpErrorException) error;
+                    assertThat(testContext, httpErrorException.getStatus(), is(403));
+                    assertThat(testContext, httpErrorException.getErrorResponse().getCode(), is("SignatureDoesNotMatch"));
+                    async.complete();
+                }
+        );
+    }
+
+    void mockCopy(Header... expectedHeaders) throws IOException {
+        mock(
+                Collections.emptyMap(),
+                "PUT",
+                "/destinationBucket/destinationKey",
+                200,
+                "response".getBytes(),
+                ArrayUtils.add(expectedHeaders, Header.header("X-Amz-Copy-Source", "/sourceBucket/sourceKey"))
+        );
+    }
+
+    void mockCopyErrorResponse(Header... expectedHeaders) throws IOException {
+        mock(
+                Collections.emptyMap(),
+                "PUT",
+                "/destinationBucket/destinationKey",
+                403,
+                Resources.toByteArray(Resources.getResource(AbstractS3ClientTest.class, "/response/errorResponse.xml")),
+                ArrayUtils.add(expectedHeaders, Header.header("X-Amz-Copy-Source", "/sourceBucket/sourceKey"))
         );
     }
 
@@ -207,26 +295,45 @@ public abstract class AbstractS3ClientTest extends AbstractFunctionalTest {
                 testContext::fail);
     }
 
+    void verifyCopyErrorResponse(final TestContext testContext) {
+
+        final Async async = testContext.async();
+        s3Client.copy(
+                "sourceBucket", "sourceKey",
+                "destinationBucket", "destinationKey",
+                (result) -> {
+                    testContext.fail("Exceptions should be thrown");
+                },
+                error -> {
+                    assertThat(testContext, error, instanceOf(HttpErrorException.class));
+
+                    final HttpErrorException httpErrorException = (HttpErrorException) error;
+                    assertThat(testContext, httpErrorException.getStatus(), is(403));
+                    assertThat(testContext, httpErrorException.getErrorResponse().getCode(), is("SignatureDoesNotMatch"));
+                    async.complete();
+                }
+        );
+    }
+
     void mockListBucket(Map<String, List<String>> expectedQueryParams, Header... expectedHeaders) throws IOException {
-        mockListBucket(expectedQueryParams, "/response/listBucketResult.xml", 200, expectedHeaders);
+        mock(
+                expectedQueryParams,
+                "GET",
+                "/sourceBucket",
+                200,
+                Resources.toByteArray(Resources.getResource(AbstractS3ClientTest.class, "/response/listBucketResult.xml")),
+                expectedHeaders
+        );
     }
 
     void mockListBucketErrorResponse(Map<String, List<String>> expectedQueryParams, Header... expectedHeaders) throws IOException {
-        mockListBucket(expectedQueryParams, "/response/errorResponse.xml", 403, expectedHeaders);
-    }
-
-    private void mockListBucket(Map<String, List<String>> expectedQueryParams, String response, Integer statusCode, Header... expectedHeaders) throws IOException {
-        getMockServerClient().when(
-                request()
-                        .withMethod("GET")
-                        .withPath("/sourceBucket")
-                        .withHeaders(expectedHeaders)
-                        .withQueryStringParameters(expectedQueryParams)
-        ).respond(
-                response()
-                        .withStatusCode(statusCode)
-                        .withHeader(Header.header("Content-Type", "application/json;charset=UTF-8"))
-                        .withBody(Resources.toByteArray(Resources.getResource(AbstractS3ClientTest.class, response)))
+        mock(
+                expectedQueryParams,
+                "GET",
+                "/sourceBucket",
+                403,
+                Resources.toByteArray(Resources.getResource(AbstractS3ClientTest.class, "/response/errorResponse.xml")),
+                expectedHeaders
         );
     }
 
@@ -253,7 +360,7 @@ public abstract class AbstractS3ClientTest extends AbstractFunctionalTest {
         s3Client.listBucket(
                 "sourceBucket",
                 new ListBucketRequest(),
-                (listBucketResult) -> {
+                (result) -> {
                     testContext.fail("Exceptions should be thrown");
                 },
                 error -> {
@@ -267,4 +374,28 @@ public abstract class AbstractS3ClientTest extends AbstractFunctionalTest {
         );
     }
 
+    void mock(Map<String, List<String>> expectedQueryParams, String method, String path, Integer statusCode, byte[] responseBody, Header... expectedHeaders) throws IOException {
+        mock(expectedQueryParams, method, path, statusCode, null, responseBody, expectedHeaders);
+    }
+
+    void mock(Map<String, List<String>> expectedQueryParams, String method, String path, Integer statusCode, byte[] requestBody, byte[] responseBody, Header... expectedHeaders) throws IOException {
+        final HttpRequest httpRequest = request()
+                .withMethod(method)
+                .withPath(path)
+                .withHeaders(expectedHeaders)
+                .withQueryStringParameters(expectedQueryParams);
+
+        if (requestBody != null) {
+            httpRequest.withBody(requestBody);
+        }
+
+        getMockServerClient().when(
+                httpRequest
+        ).respond(
+                response()
+                        .withStatusCode(statusCode)
+                        .withHeader(Header.header("Content-Type", "application/xml;charset=UTF-8"))
+                        .withBody(responseBody)
+        );
+    }
 }

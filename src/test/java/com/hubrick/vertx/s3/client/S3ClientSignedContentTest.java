@@ -37,7 +37,7 @@ public class S3ClientSignedContentTest extends AbstractS3ClientTest {
     }
 
     @Test
-    public void testGet(TestContext testContext) {
+    public void testGet(TestContext testContext) throws IOException {
         mockGet(
                 Header.header("X-Amz-Date", "20161110T130214Z"),
                 Header.header("X-Amz-Content-Sha256", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"),
@@ -48,7 +48,18 @@ public class S3ClientSignedContentTest extends AbstractS3ClientTest {
     }
 
     @Test
-    public void testPut(TestContext testContext) {
+    public void testGetError(TestContext testContext) throws IOException {
+        mockGetErrorResponse(
+                Header.header("X-Amz-Date", "20161110T130214Z"),
+                Header.header("X-Amz-Content-Sha256", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"),
+                Header.header("Authorization", "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20161110/us-east-1/service/aws4_request, SignedHeaders=host;x-amz-date, Signature=1312c94db8c2ad1d2d56d4c6bb16cdb7c0485b100b2baf2d8aabbb3fec0075fb")
+        );
+
+        verifyGetErrorResponse(testContext);
+    }
+
+    @Test
+    public void testPut(TestContext testContext) throws IOException {
         mockPut(
                 Header.header("X-Amz-Date", "20161110T130214Z"),
                 Header.header("X-Amz-Content-Sha256", "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"),
@@ -59,7 +70,18 @@ public class S3ClientSignedContentTest extends AbstractS3ClientTest {
     }
 
     @Test
-    public void testDelete(TestContext testContext) {
+    public void testPutError(TestContext testContext) throws IOException {
+        mockPutErrorResponse(
+                Header.header("X-Amz-Date", "20161110T130214Z"),
+                Header.header("X-Amz-Content-Sha256", "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"),
+                Header.header("Authorization", "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20161110/us-east-1/service/aws4_request, SignedHeaders=host;x-amz-date, Signature=ec91365b21b715a7f981a89f61e2ef2c0a73cce5998b4272272f68a82d94e055")
+        );
+
+        verifyPutErrorResponse(testContext);
+    }
+
+    @Test
+    public void testDelete(TestContext testContext) throws IOException {
         mockDelete(
                 Header.header("X-Amz-Date", "20161110T130214Z"),
                 Header.header("X-Amz-Content-Sha256", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"),
@@ -70,7 +92,19 @@ public class S3ClientSignedContentTest extends AbstractS3ClientTest {
     }
 
     @Test
-    public void testCopy(TestContext testContext) {
+    public void testDeleteError(TestContext testContext) throws IOException {
+        mockDeleteErrorResponse(
+                Header.header("X-Amz-Date", "20161110T130214Z"),
+                Header.header("X-Amz-Content-Sha256", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"),
+                Header.header("Authorization", "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20161110/us-east-1/service/aws4_request, SignedHeaders=host;x-amz-date, Signature=bc61c03c7fbd958aa69920984856ca9ec5454c6714524b39fa637e1837e96355")
+        );
+
+        verifyDeleteErrorResponse(testContext);
+    }
+
+
+    @Test
+    public void testCopy(TestContext testContext) throws IOException {
         mockCopy(
                 Header.header("X-Amz-Date", "20161110T130214Z"),
                 Header.header("X-Amz-Content-Sha256", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"),
@@ -78,6 +112,17 @@ public class S3ClientSignedContentTest extends AbstractS3ClientTest {
         );
 
         verifyCopy(testContext);
+    }
+
+    @Test
+    public void testCopyError(TestContext testContext) throws IOException {
+        mockCopyErrorResponse(
+                Header.header("X-Amz-Date", "20161110T130214Z"),
+                Header.header("X-Amz-Content-Sha256", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"),
+                Header.header("Authorization", "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20161110/us-east-1/service/aws4_request, SignedHeaders=host;x-amz-copy-source;x-amz-date, Signature=f852af4f877c4f1522af892d11a4bd9a6a42327a67877916a8d57c3339f46d0b")
+        );
+
+        verifyCopyErrorResponse(testContext);
     }
 
     @Test
