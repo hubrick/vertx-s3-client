@@ -34,6 +34,8 @@ import java.time.Clock;
 import java.time.ZonedDateTime;
 import java.util.Map;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 public class S3ClientRequest implements HttpClientRequest {
 
     private static final Logger log = LoggerFactory.getLogger(S3ClientRequest.class);
@@ -44,8 +46,6 @@ public class S3ClientRequest implements HttpClientRequest {
     private final String method;
     private final String region;
     private final String serviceName;
-    private final String bucket;
-    private final String key;
     private final Clock clock;
     private final boolean signPayload;
 
@@ -57,27 +57,27 @@ public class S3ClientRequest implements HttpClientRequest {
     public S3ClientRequest(String method,
                            String region,
                            String serviceName,
-                           String bucket,
-                           String key,
                            HttpClientRequest request) {
-        this(method, region, serviceName, bucket, key, request, null, null, Clock.systemDefaultZone(), false);
+        this(method, region, serviceName, request, null, null, Clock.systemDefaultZone(), false);
     }
 
     public S3ClientRequest(String method,
                            String region,
                            String serviceName,
-                           String bucket,
-                           String key,
                            HttpClientRequest request,
                            String awsAccessKey,
                            String awsSecretKey,
                            Clock clock,
                            boolean signPayload) {
+        checkNotNull(method, "method must not be null");
+        checkNotNull(region, "region must not be null");
+        checkNotNull(serviceName, "serviceName must not be null");
+        checkNotNull(request, "request must not be null");
+        checkNotNull(clock, "clock must not be null");
+
         this.method = method;
         this.region = region;
         this.serviceName = serviceName;
-        this.bucket = bucket;
-        this.key = key;
         this.request = request;
         this.awsAccessKey = awsAccessKey;
         this.awsSecretKey = awsSecretKey;
@@ -356,13 +356,11 @@ public class S3ClientRequest implements HttpClientRequest {
 
         authenticationHeaderSet = true;
 
-
-        final String canonicalizedResource = "/" + bucket + "/" + key;
-
         final AWS4SignatureBuilder signatureBuilder = AWS4SignatureBuilder
                 .builder(ZonedDateTime.now(clock), region, serviceName)
                 .httpRequestMethod(method)
-                .canonicalUri(canonicalizedResource)
+                .canonicalUri(request.path())
+                .canonicalQueryString(request.query())
                 .awsSecretKey(awsSecretKey);
 
         headers().set(S3Headers.DATE.getValue(), signatureBuilder.makeSignatureFormattedDate());

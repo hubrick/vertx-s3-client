@@ -15,9 +15,13 @@
  */
 package com.hubrick.vertx.s3.client;
 
+import com.google.common.collect.ImmutableMap;
 import io.vertx.ext.unit.TestContext;
 import org.junit.Test;
 import org.mockserver.model.Header;
+
+import java.io.IOException;
+import java.util.Collections;
 
 /**
  * @author marcus
@@ -76,4 +80,27 @@ public class S3ClientSignedContentTest extends AbstractS3ClientTest {
         verifyCopy(testContext);
     }
 
+    @Test
+    public void testListBucket(TestContext testContext) throws IOException {
+        mockListBucket(
+                ImmutableMap.of("list-type", Collections.singletonList("2")),
+                Header.header("X-Amz-Date", "20161110T130214Z"),
+                Header.header("X-Amz-Content-Sha256", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"),
+                Header.header("Authorization", "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20161110/us-east-1/service/aws4_request, SignedHeaders=host;x-amz-date, Signature=6f159fdbd665e8913f505d000ca51bb762fc48d021085f885618203ed2d47f02")
+        );
+
+        verifyListBucket(testContext);
+    }
+
+    @Test
+    public void testListBucketError(TestContext testContext) throws IOException {
+        mockListBucketErrorResponse(
+                ImmutableMap.of("list-type", Collections.singletonList("2")),
+                Header.header("X-Amz-Date", "20161110T130214Z"),
+                Header.header("X-Amz-Content-Sha256", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"),
+                Header.header("Authorization", "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20161110/us-east-1/service/aws4_request, SignedHeaders=host;x-amz-date, Signature=6f159fdbd665e8913f505d000ca51bb762fc48d021085f885618203ed2d47f02")
+        );
+
+        verifyListBucketErrorResponse(testContext);
+    }
 }

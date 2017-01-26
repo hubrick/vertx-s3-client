@@ -15,17 +15,40 @@
  */
 package com.hubrick.vertx.s3.client;
 
+import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
 import com.hubrick.vertx.s3.S3Headers;
+import com.hubrick.vertx.s3.exception.HttpErrorException;
+import com.hubrick.vertx.s3.model.CommonPrefixes;
+import com.hubrick.vertx.s3.model.Contents;
+import com.hubrick.vertx.s3.model.ErrorResponse;
+import com.hubrick.vertx.s3.model.ListBucketRequest;
+import com.hubrick.vertx.s3.model.ListBucketResult;
+import com.hubrick.vertx.s3.model.Owner;
+import com.hubrick.vertx.s3.model.filter.NamespaceFilter;
+import com.hubrick.vertx.s3.util.UrlEncodingUtils;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.XMLReader;
+import org.xml.sax.helpers.XMLReaderFactory;
 
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.Marshaller;
+import javax.xml.bind.Unmarshaller;
+import javax.xml.transform.sax.SAXSource;
+import java.io.ByteArrayInputStream;
 import java.text.MessageFormat;
 import java.time.Clock;
+import java.util.HashMap;
+import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -33,10 +56,14 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 public class S3Client {
 
+    private static final Logger log = LoggerFactory.getLogger(S3Client.class);
+
     public static final String DEFAULT_REGION = "us-east-1";
     public static final String DEFAULT_ENDPOINT = "s3.amazonaws.com";
     private static final String ENDPOINT_PATTERN = "s3-{0}.amazonaws.com";
 
+    private final Marshaller jaxbMarshaller;
+    private final Unmarshaller jaxbUnmarshaller;
     private final Long globalTimeout;
     private final String awsRegion;
 
@@ -64,6 +91,8 @@ public class S3Client {
         checkNotNull(s3ClientOptions.getGlobalTimeoutMs(), "global timeout must be null");
         checkArgument(s3ClientOptions.getGlobalTimeoutMs() > 0, "global timeout must be more than zero ms");
 
+        this.jaxbMarshaller = createJaxbMarshaller();
+        this.jaxbUnmarshaller = createJaxbUnmarshaller();
 
         this.clock = clock;
         this.awsServiceName = s3ClientOptions.getAwsServiceName();
@@ -156,6 +185,39 @@ public class S3Client {
         request.end();
     }
 
+    public void listBucket(String bucket,
+                           ListBucketRequest listBucketRequest,
+                           Handler<ListBucketResult> handler,
+                           Handler<Throwable> exceptionHandler) {
+        S3ClientRequest request = createListBucketRequest(bucket, listBucketRequest, event -> {
+            event.bodyHandler(buffer -> {
+                try {
+                    if(event.statusCode() / 100 != 2) {
+                        log.warn("Error occurred. Status: {}, Message: {}", event.statusCode(), event.statusMessage());
+                        if(log.isDebugEnabled()) {
+                            log.debug("Response: {}", new String(buffer.getBytes(), Charsets.UTF_8));
+                        }
+
+                        exceptionHandler.handle(
+                                new HttpErrorException(
+                                        event.statusCode(),
+                                        event.statusMessage(),
+                                        (ErrorResponse) jaxbUnmarshaller.unmarshal(convertToSaxSource(buffer.getBytes())),
+                                        "Error occurred during on 'listBucket'"
+                                )
+                        );
+                    } else {
+                        handler.handle((ListBucketResult) jaxbUnmarshaller.unmarshal(convertToSaxSource(buffer.getBytes())));
+                    }
+                } catch (Exception e) {
+                    exceptionHandler.handle(e);
+                }
+            });
+        });
+        request.exceptionHandler(exceptionHandler);
+        request.end();
+    }
+
     // Create requests which can be customized
     // ---------------------------------------
 
@@ -165,16 +227,16 @@ public class S3Client {
                                             Handler<HttpClientResponse> handler) {
         HttpClientRequest httpRequest = client.put("/" + bucket + "/" + key,
                 handler);
-        return new S3ClientRequest("PUT",
+        return new S3ClientRequest(
+                "PUT",
                 awsRegion,
                 awsServiceName,
-                bucket,
-                key,
                 httpRequest,
                 awsAccessKey,
                 awsSecretKey,
                 clock,
-                signPayload)
+                signPayload
+        )
                 .setTimeout(globalTimeout)
                 .putHeader("Host", hostname);
 
@@ -191,17 +253,17 @@ public class S3Client {
                 handler
         );
 
-        final S3ClientRequest s3ClientRequest = new S3ClientRequest("PUT",
+        final S3ClientRequest s3ClientRequest = new S3ClientRequest(
+                "PUT",
                 awsRegion,
                 awsServiceName,
-                destinationBucket,
-                destinationKey,
                 httpRequest,
                 awsAccessKey,
                 awsSecretKey,
                 clock,
                 signPayload
-        ).setTimeout(globalTimeout)
+        )
+                .setTimeout(globalTimeout)
                 .putHeader("Host", hostname);
 
         return s3ClientRequest.putHeader(S3Headers.COPY_SOURCE_HEADER.getValue(), "/" + sourceBucket + "/" + sourceKey);
@@ -213,18 +275,70 @@ public class S3Client {
                                             Handler<HttpClientResponse> handler) {
         HttpClientRequest httpRequest = client.get("/" + bucket + "/" + key,
                 handler);
-        return new S3ClientRequest("GET",
+        return new S3ClientRequest(
+                "GET",
                 awsRegion,
                 awsServiceName,
-                bucket,
-                key,
                 httpRequest,
                 awsAccessKey,
                 awsSecretKey,
                 clock,
-                signPayload)
+                signPayload
+        )
                 .setTimeout(globalTimeout)
                 .putHeader("Host", hostname);
+    }
+
+    private S3ClientRequest createListBucketRequest(String bucket,
+                                                    ListBucketRequest listBucketRequest,
+                                                    Handler<HttpClientResponse> handler) {
+
+        final Map<String, String> queryParams = populateListBucketQueryParams(listBucketRequest);
+        final HttpClientRequest httpRequest = client.get(UrlEncodingUtils.addParamsToUrl("/" + bucket, queryParams), handler);
+
+        final S3ClientRequest s3ClientRequest = new S3ClientRequest(
+                "GET",
+                awsRegion,
+                awsServiceName,
+                httpRequest,
+                awsAccessKey,
+                awsSecretKey,
+                clock,
+                signPayload
+        )
+                .setTimeout(globalTimeout)
+                .putHeader("Host", hostname);
+
+        return s3ClientRequest;
+    }
+
+    private Map<String, String> populateListBucketQueryParams(ListBucketRequest listObjectsRequest) {
+        final Map<String, String> queryParams = new HashMap<>();
+        queryParams.put("list-type", "2");
+
+        if (listObjectsRequest.getContinuationToken() != null) {
+            queryParams.put("continuation-token", listObjectsRequest.getContinuationToken());
+        }
+        if (listObjectsRequest.getDelimiter() != null) {
+            queryParams.put("delimiter", listObjectsRequest.getDelimiter());
+        }
+        if (listObjectsRequest.getEncodingType() != null) {
+            queryParams.put("encoding-type", listObjectsRequest.getEncodingType());
+        }
+        if (listObjectsRequest.getFetchOwner() != null) {
+            queryParams.put("fetch-owner", listObjectsRequest.getFetchOwner());
+        }
+        if (listObjectsRequest.getMaxKeys() != null) {
+            queryParams.put("max-keys", listObjectsRequest.getMaxKeys().toString());
+        }
+        if (listObjectsRequest.getPrefix() != null) {
+            queryParams.put("prefix", listObjectsRequest.getPrefix());
+        }
+        if (listObjectsRequest.getStartAfter() != null) {
+            queryParams.put("start-after", listObjectsRequest.getStartAfter());
+        }
+
+        return queryParams;
     }
 
     // create DELETE -> request Object
@@ -233,18 +347,69 @@ public class S3Client {
                                                Handler<HttpClientResponse> handler) {
         HttpClientRequest httpRequest = client.delete("/" + bucket + "/" + key,
                 handler);
-        return new S3ClientRequest("DELETE",
+        return new S3ClientRequest(
+                "DELETE",
                 awsRegion,
                 awsServiceName,
-                bucket,
-                key,
                 httpRequest,
                 awsAccessKey,
                 awsSecretKey,
                 clock,
-                signPayload)
+                signPayload
+        )
                 .setTimeout(globalTimeout)
                 .putHeader("Host", hostname);
 
+    }
+
+    private JAXBContext createJAXBContext() {
+        try {
+            return JAXBContext.newInstance(
+                    Contents.class,
+                    CommonPrefixes.class,
+                    ListBucketResult.class,
+                    Owner.class,
+                    ErrorResponse.class
+            );
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private Marshaller createJaxbMarshaller() {
+        try {
+            final JAXBContext jaxbContext = createJAXBContext();
+            final Marshaller jaxbMarshaller = jaxbContext.createMarshaller();
+
+            // output pretty printed
+            jaxbMarshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+
+            return jaxbMarshaller;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private Unmarshaller createJaxbUnmarshaller() {
+        try {
+            final JAXBContext jaxbContext = createJAXBContext();
+            return jaxbContext.createUnmarshaller();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private SAXSource convertToSaxSource(byte[] payload) throws SAXException {
+        //Create an XMLReader to use with our filter
+        final XMLReader reader = XMLReaderFactory.createXMLReader();
+
+        //Create the filter to remove all namespaces and set the xmlReader as its parent.
+        final NamespaceFilter inFilter = new NamespaceFilter(null, false);
+        inFilter.setParent(reader);
+
+        final InputSource inputSource = new InputSource(new ByteArrayInputStream(payload));
+
+        //Create a SAXSource specifying the filter
+        return new SAXSource(inFilter, inputSource);
     }
 }

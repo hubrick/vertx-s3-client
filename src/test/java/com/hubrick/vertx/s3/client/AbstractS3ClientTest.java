@@ -15,21 +15,30 @@
  */
 package com.hubrick.vertx.s3.client;
 
+import com.google.common.io.Resources;
 import com.hubrick.vertx.s3.AbstractFunctionalTest;
 import com.hubrick.vertx.s3.S3TestCredentials;
+import com.hubrick.vertx.s3.exception.HttpErrorException;
+import com.hubrick.vertx.s3.model.ListBucketRequest;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import org.junit.Before;
 import org.mockserver.model.Header;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.List;
+import java.util.Map;
 
 import static com.hubrick.vertx.s3.VertxMatcherAssert.assertThat;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.Matchers.hasSize;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.HttpResponse.response;
 
@@ -196,6 +205,66 @@ public abstract class AbstractS3ClientTest extends AbstractFunctionalTest {
                     });
                 },
                 testContext::fail);
+    }
+
+    void mockListBucket(Map<String, List<String>> expectedQueryParams, Header... expectedHeaders) throws IOException {
+        mockListBucket(expectedQueryParams, "/response/listBucketResult.xml", 200, expectedHeaders);
+    }
+
+    void mockListBucketErrorResponse(Map<String, List<String>> expectedQueryParams, Header... expectedHeaders) throws IOException {
+        mockListBucket(expectedQueryParams, "/response/errorResponse.xml", 403, expectedHeaders);
+    }
+
+    private void mockListBucket(Map<String, List<String>> expectedQueryParams, String response, Integer statusCode, Header... expectedHeaders) throws IOException {
+        getMockServerClient().when(
+                request()
+                        .withMethod("GET")
+                        .withPath("/sourceBucket")
+                        .withHeaders(expectedHeaders)
+                        .withQueryStringParameters(expectedQueryParams)
+        ).respond(
+                response()
+                        .withStatusCode(statusCode)
+                        .withHeader(Header.header("Content-Type", "application/json;charset=UTF-8"))
+                        .withBody(Resources.toByteArray(Resources.getResource(AbstractS3ClientTest.class, response)))
+        );
+    }
+
+    void verifyListBucket(final TestContext testContext) {
+
+        final Async async = testContext.async();
+        s3Client.listBucket(
+                "sourceBucket",
+                new ListBucketRequest(),
+                (listBucketResult) -> {
+                    assertThat(testContext, listBucketResult, notNullValue());
+                    assertThat(testContext, listBucketResult.getContentsList(), hasSize(5));
+                    assertThat(testContext, listBucketResult.getName(), is("bucket"));
+
+                    async.complete();
+                },
+                testContext::fail
+        );
+    }
+
+    void verifyListBucketErrorResponse(final TestContext testContext) {
+
+        final Async async = testContext.async();
+        s3Client.listBucket(
+                "sourceBucket",
+                new ListBucketRequest(),
+                (listBucketResult) -> {
+                    testContext.fail("Exceptions should be thrown");
+                },
+                error -> {
+                    assertThat(testContext, error, instanceOf(HttpErrorException.class));
+
+                    final HttpErrorException httpErrorException = (HttpErrorException) error;
+                    assertThat(testContext, httpErrorException.getStatus(), is(403));
+                    assertThat(testContext, httpErrorException.getErrorResponse().getCode(), is("SignatureDoesNotMatch"));
+                    async.complete();
+                }
+        );
     }
 
 }
