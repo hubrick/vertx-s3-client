@@ -31,31 +31,31 @@ public class S3ClientWithoutCredentialsTest extends AbstractS3ClientTest {
     }
 
     @Test
-    public void testGet(TestContext testContext) throws IOException {
-        mockGet();
+    public void testGetObject(TestContext testContext) throws IOException {
+        mockGetObject();
 
-        verifyGet(testContext);
+        verifyGetObject(testContext);
     }
 
     @Test
-    public void testPut(TestContext testContext) throws IOException {
-        mockPut();
+    public void testPutObject(TestContext testContext) throws IOException {
+        mockPutObject();
 
-        verifyPut(testContext);
+        verifyPutObject(testContext);
     }
 
     @Test
-    public void testDelete(TestContext testContext) throws IOException {
-        mockDelete();
+    public void testDeleteObject(TestContext testContext) throws IOException {
+        mockDeleteObject();
 
-        verifyDelete(testContext);
+        verifyDeleteObject(testContext);
     }
 
     @Test
-    public void testCopy(TestContext testContext) throws IOException {
-        mockCopy();
+    public void testCopyObject(TestContext testContext) throws IOException {
+        mockCopyObject();
 
-        verifyCopy(testContext);
+        verifyCopyObject(testContext);
 
     }
 }

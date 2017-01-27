@@ -37,97 +37,97 @@ public class S3ClientSignedContentTest extends AbstractS3ClientTest {
     }
 
     @Test
-    public void testGet(TestContext testContext) throws IOException {
-        mockGet(
+    public void testGetObject(TestContext testContext) throws IOException {
+        mockGetObject(
                 Header.header("X-Amz-Date", "20161110T130214Z"),
                 Header.header("X-Amz-Content-Sha256", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"),
                 Header.header("Authorization", "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20161110/us-east-1/service/aws4_request, SignedHeaders=host;x-amz-date, Signature=1312c94db8c2ad1d2d56d4c6bb16cdb7c0485b100b2baf2d8aabbb3fec0075fb")
         );
 
-        verifyGet(testContext);
+        verifyGetObject(testContext);
     }
 
     @Test
-    public void testGetError(TestContext testContext) throws IOException {
-        mockGetErrorResponse(
+    public void testGetObjectError(TestContext testContext) throws IOException {
+        mockGetObjectErrorResponse(
                 Header.header("X-Amz-Date", "20161110T130214Z"),
                 Header.header("X-Amz-Content-Sha256", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"),
                 Header.header("Authorization", "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20161110/us-east-1/service/aws4_request, SignedHeaders=host;x-amz-date, Signature=1312c94db8c2ad1d2d56d4c6bb16cdb7c0485b100b2baf2d8aabbb3fec0075fb")
         );
 
-        verifyGetErrorResponse(testContext);
+        verifyGetObjectErrorResponse(testContext);
     }
 
     @Test
-    public void testPut(TestContext testContext) throws IOException {
-        mockPut(
+    public void testPutObject(TestContext testContext) throws IOException {
+        mockPutObject(
                 Header.header("X-Amz-Date", "20161110T130214Z"),
                 Header.header("X-Amz-Content-Sha256", "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"),
                 Header.header("Authorization", "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20161110/us-east-1/service/aws4_request, SignedHeaders=host;x-amz-date, Signature=ec91365b21b715a7f981a89f61e2ef2c0a73cce5998b4272272f68a82d94e055")
         );
 
-        verifyPut(testContext);
+        verifyPutObject(testContext);
     }
 
     @Test
-    public void testPutError(TestContext testContext) throws IOException {
-        mockPutErrorResponse(
+    public void testPutObjectError(TestContext testContext) throws IOException {
+        mockPutObjectErrorResponse(
                 Header.header("X-Amz-Date", "20161110T130214Z"),
                 Header.header("X-Amz-Content-Sha256", "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"),
                 Header.header("Authorization", "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20161110/us-east-1/service/aws4_request, SignedHeaders=host;x-amz-date, Signature=ec91365b21b715a7f981a89f61e2ef2c0a73cce5998b4272272f68a82d94e055")
         );
 
-        verifyPutErrorResponse(testContext);
+        verifyPutObjectErrorResponse(testContext);
     }
 
     @Test
-    public void testDelete(TestContext testContext) throws IOException {
-        mockDelete(
+    public void testDeleteObject(TestContext testContext) throws IOException {
+        mockDeleteObject(
                 Header.header("X-Amz-Date", "20161110T130214Z"),
                 Header.header("X-Amz-Content-Sha256", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"),
                 Header.header("Authorization", "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20161110/us-east-1/service/aws4_request, SignedHeaders=host;x-amz-date, Signature=bc61c03c7fbd958aa69920984856ca9ec5454c6714524b39fa637e1837e96355")
         );
 
-        verifyDelete(testContext);
+        verifyDeleteObject(testContext);
     }
 
     @Test
-    public void testDeleteError(TestContext testContext) throws IOException {
-        mockDeleteErrorResponse(
+    public void testDeleteObjectError(TestContext testContext) throws IOException {
+        mockDeleteObjectErrorResponse(
                 Header.header("X-Amz-Date", "20161110T130214Z"),
                 Header.header("X-Amz-Content-Sha256", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"),
                 Header.header("Authorization", "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20161110/us-east-1/service/aws4_request, SignedHeaders=host;x-amz-date, Signature=bc61c03c7fbd958aa69920984856ca9ec5454c6714524b39fa637e1837e96355")
         );
 
-        verifyDeleteErrorResponse(testContext);
+        verifyDeleteObjectErrorResponse(testContext);
     }
 
 
     @Test
-    public void testCopy(TestContext testContext) throws IOException {
-        mockCopy(
+    public void testCopyObject(TestContext testContext) throws IOException {
+        mockCopyObject(
                 Header.header("X-Amz-Date", "20161110T130214Z"),
                 Header.header("X-Amz-Content-Sha256", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"),
                 Header.header("Authorization", "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20161110/us-east-1/service/aws4_request, SignedHeaders=host;x-amz-copy-source;x-amz-date, Signature=f852af4f877c4f1522af892d11a4bd9a6a42327a67877916a8d57c3339f46d0b")
         );
 
-        verifyCopy(testContext);
+        verifyCopyObject(testContext);
     }
 
     @Test
-    public void testCopyError(TestContext testContext) throws IOException {
-        mockCopyErrorResponse(
+    public void testCopyObjectError(TestContext testContext) throws IOException {
+        mockCopyObjectErrorResponse(
                 Header.header("X-Amz-Date", "20161110T130214Z"),
                 Header.header("X-Amz-Content-Sha256", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"),
                 Header.header("Authorization", "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20161110/us-east-1/service/aws4_request, SignedHeaders=host;x-amz-copy-source;x-amz-date, Signature=f852af4f877c4f1522af892d11a4bd9a6a42327a67877916a8d57c3339f46d0b")
         );
 
-        verifyCopyErrorResponse(testContext);
+        verifyCopyObjectErrorResponse(testContext);
     }
 
     @Test
-    public void testListBucket(TestContext testContext) throws IOException {
-        mockListBucket(
+    public void testGetBucket(TestContext testContext) throws IOException {
+        mockGetBucket(
                 ImmutableMap.of(
                         "list-type", Collections.singletonList("2"),
                         "continuation-token", Collections.singletonList("14HF6Dfbr92F1EYlZIrMwxPYKQl5lD/mbwiw5+Nlrn1lYIZX3YGzo16Dgz+dxbxFeNGmLsnzwnbbuQM0CMl0krVwh8TBj8nCmNtq/iQCK6gzln8z3U4C71Mh2HyEMHcMgrZGR/akosVql7/AIctj6rA==")
@@ -137,12 +137,12 @@ public class S3ClientSignedContentTest extends AbstractS3ClientTest {
                 Header.header("Authorization", "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20161110/us-east-1/service/aws4_request, SignedHeaders=host;x-amz-date, Signature=62c51118953e03169f4d723c3ffc4fdcc3a30831b898f962dffd423264dae75b")
         );
 
-        verifyListBucket(testContext);
+        verifyGetBucket(testContext);
     }
 
     @Test
-    public void testListBucketError(TestContext testContext) throws IOException {
-        mockListBucketErrorResponse(
+    public void testGetBucketError(TestContext testContext) throws IOException {
+        mockGetBucketErrorResponse(
                 ImmutableMap.of(
                         "list-type", Collections.singletonList("2"),
                         "continuation-token", Collections.singletonList("14HF6Dfbr92F1EYlZIrMwxPYKQl5lD/mbwiw5+Nlrn1lYIZX3YGzo16Dgz+dxbxFeNGmLsnzwnbbuQM0CMl0krVwh8TBj8nCmNtq/iQCK6gzln8z3U4C71Mh2HyEMHcMgrZGR/akosVql7/AIctj6rA==")
@@ -152,6 +152,6 @@ public class S3ClientSignedContentTest extends AbstractS3ClientTest {
                 Header.header("Authorization", "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20161110/us-east-1/service/aws4_request, SignedHeaders=host;x-amz-date, Signature=62c51118953e03169f4d723c3ffc4fdcc3a30831b898f962dffd423264dae75b")
         );
 
-        verifyListBucketErrorResponse(testContext);
+        verifyGetBucketErrorResponse(testContext);
     }
 }

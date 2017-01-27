@@ -33,47 +33,47 @@ public class S3ClientWithCredentialsTest extends AbstractS3ClientTest {
     }
 
     @Test
-    public void testGet(TestContext testContext) throws IOException {
-        mockGet(
+    public void testGetObject(TestContext testContext) throws IOException {
+        mockGetObject(
                 Header.header("X-Amz-Date", "20161110T130214Z"),
                 Header.header("X-Amz-Content-Sha256", "UNSIGNED-PAYLOAD"),
                 Header.header("Authorization", "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20161110/us-east-1/service/aws4_request, SignedHeaders=host;x-amz-date, Signature=77f53b6d1eb26273da59491e98ea10989a006a57620d7351be44b596a348d699")
         );
 
-        verifyGet(testContext);
+        verifyGetObject(testContext);
 
     }
 
     @Test
-    public void testPut(TestContext testContext) throws IOException {
-        mockPut(
+    public void testPutObject(TestContext testContext) throws IOException {
+        mockPutObject(
                 Header.header("X-Amz-Date", "20161110T130214Z"),
                 Header.header("X-Amz-Content-Sha256", "UNSIGNED-PAYLOAD"),
                 Header.header("Authorization", "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20161110/us-east-1/service/aws4_request, SignedHeaders=host;x-amz-date, Signature=3a058beb9174cffbb616894f55a8c5999c376a2ba0851513a635de3952385013")
         );
 
-        verifyPut(testContext);
+        verifyPutObject(testContext);
     }
 
     @Test
-    public void testDelete(TestContext testContext) throws IOException {
-        mockDelete(
+    public void testDeleteObject(TestContext testContext) throws IOException {
+        mockDeleteObject(
                 Header.header("X-Amz-Date", "20161110T130214Z"),
                 Header.header("X-Amz-Content-Sha256", "UNSIGNED-PAYLOAD"),
                 Header.header("Authorization", "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20161110/us-east-1/service/aws4_request, SignedHeaders=host;x-amz-date, Signature=7a119f6c4ce49d2a0eaffd7511d203523b1e2435837f5916d0bd8c08123d4eaa")
         );
 
-        verifyDelete(testContext);
+        verifyDeleteObject(testContext);
     }
 
     @Test
-    public void testCopy(TestContext testContext) throws IOException {
-        mockCopy(
+    public void testCopyObject(TestContext testContext) throws IOException {
+        mockCopyObject(
                 Header.header("X-Amz-Date", "20161110T130214Z"),
                 Header.header("X-Amz-Content-Sha256", "UNSIGNED-PAYLOAD"),
                 Header.header("Authorization", "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20161110/us-east-1/service/aws4_request, SignedHeaders=host;x-amz-copy-source;x-amz-date, Signature=f4fb57b90ec37c3bb9b437cff5f3fd164d81cbe2ff13f9223b20d3c899f50036")
         );
 
-        verifyCopy(testContext);
+        verifyCopyObject(testContext);
     }
 }

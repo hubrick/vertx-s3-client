@@ -32,7 +32,7 @@ import java.util.List;
  */
 @XmlRootElement(name = "ListBucketResult")
 @XmlAccessorType(XmlAccessType.FIELD)
-public class ListBucketResult {
+public class GetBucketRespone {
 
     @XmlElement(name = "Name", required = true)
     private String name;

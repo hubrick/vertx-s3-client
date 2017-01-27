@@ -24,7 +24,6 @@ import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpConnection;
 import io.vertx.core.http.HttpFrame;
-import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpVersion;
 import org.slf4j.Logger;
@@ -384,7 +383,7 @@ public class S3ClientRequest implements HttpClientRequest {
 
             headers().set("Authorization", signatureBuilder.buildAuthorizationHeaderValue(awsAccessKey));
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+            log.error("Fatal error. This should never happen since the encoding is hard coded", e);
         } catch (Exception e) {
             // This will totally fail,
             // but downstream users can handle it
@@ -400,20 +399,7 @@ public class S3ClientRequest implements HttpClientRequest {
         this.awsAccessKey = awsAccessKey;
     }
 
-    public void setAwsSecretKey(String awsSecretKey) {
-        this.awsSecretKey = awsSecretKey;
-    }
-
     public String getMethod() {
         return method;
     }
-
-    public String getContentType() {
-        return headers().get(HttpHeaders.CONTENT_TYPE);
-    }
-
-    public void setContentType(String contentType) {
-        headers().set(HttpHeaders.CONTENT_TYPE, contentType);
-    }
-
 }

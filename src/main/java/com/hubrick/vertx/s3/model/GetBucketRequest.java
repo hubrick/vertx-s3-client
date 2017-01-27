@@ -23,7 +23,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
  * @author Emir Dizdarevic
  * @since 2.0.0
  */
-public class ListBucketRequest {
+public class GetBucketRequest {
 
     private String delimiter;
     private String encodingType;
@@ -33,37 +33,37 @@ public class ListBucketRequest {
     private String fetchOwner;
     private String startAfter;
 
-    public ListBucketRequest withDelimiter(String delimiter) {
+    public GetBucketRequest withDelimiter(String delimiter) {
         this.delimiter = delimiter;
         return this;
     }
 
-    public ListBucketRequest withEncodingType(String encodingType) {
+    public GetBucketRequest withEncodingType(String encodingType) {
         this.encodingType = encodingType;
         return this;
     }
 
-    public ListBucketRequest withMaxKeys(Integer maxKeys) {
+    public GetBucketRequest withMaxKeys(Integer maxKeys) {
         this.maxKeys = maxKeys;
         return this;
     }
 
-    public ListBucketRequest withPrefix(String prefix) {
+    public GetBucketRequest withPrefix(String prefix) {
         this.prefix = prefix;
         return this;
     }
 
-    public ListBucketRequest withContinuationToken(String continuationToken) {
+    public GetBucketRequest withContinuationToken(String continuationToken) {
         this.continuationToken = continuationToken;
         return this;
     }
 
-    public ListBucketRequest withFetchOwner(String fetchOwner) {
+    public GetBucketRequest withFetchOwner(String fetchOwner) {
         this.fetchOwner = fetchOwner;
         return this;
     }
 
-    public ListBucketRequest withStartAfter(String startAfter) {
+    public GetBucketRequest withStartAfter(String startAfter) {
         this.startAfter = startAfter;
         return this;
     }

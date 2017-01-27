@@ -19,8 +19,11 @@ import com.google.common.io.Resources;
 import com.hubrick.vertx.s3.AbstractFunctionalTest;
 import com.hubrick.vertx.s3.S3TestCredentials;
 import com.hubrick.vertx.s3.exception.HttpErrorException;
-import com.hubrick.vertx.s3.model.ListBucketRequest;
-import io.vertx.core.MultiMap;
+import com.hubrick.vertx.s3.model.CopyObjectRequest;
+import com.hubrick.vertx.s3.model.DeleteObjectRequest;
+import com.hubrick.vertx.s3.model.GetBucketRequest;
+import com.hubrick.vertx.s3.model.GetObjectRequest;
+import com.hubrick.vertx.s3.model.PutObjectRequest;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -82,7 +85,7 @@ public abstract class AbstractS3ClientTest extends AbstractFunctionalTest {
         clientOptions.setAwsSecretKey(S3TestCredentials.AWS_SECRET_KEY);
     }
 
-    void mockGet(Header... expectedHeaders) throws IOException {
+    void mockGetObject(Header... expectedHeaders) throws IOException {
         mock(
                 Collections.emptyMap(),
                 "GET",
@@ -94,7 +97,7 @@ public abstract class AbstractS3ClientTest extends AbstractFunctionalTest {
     }
 
 
-    void mockGetErrorResponse(Header... expectedHeaders) throws IOException {
+    void mockGetObjectErrorResponse(Header... expectedHeaders) throws IOException {
         mock(
                 Collections.emptyMap(),
                 "GET",
@@ -105,9 +108,9 @@ public abstract class AbstractS3ClientTest extends AbstractFunctionalTest {
         );
     }
 
-    void verifyGet(TestContext testContext) {
+    void verifyGetObject(TestContext testContext) {
         final Async async = testContext.async();
-        s3Client.get("bucket", "key", MultiMap.caseInsensitiveMultiMap(),
+        s3Client.getObject("bucket", "key", new GetObjectRequest(),
                 (response) -> {
                     assertThat(testContext, response.statusCode(), is(200));
 
@@ -120,10 +123,10 @@ public abstract class AbstractS3ClientTest extends AbstractFunctionalTest {
                 testContext::fail);
     }
 
-    void verifyGetErrorResponse(final TestContext testContext) {
+    void verifyGetObjectErrorResponse(final TestContext testContext) {
 
         final Async async = testContext.async();
-        s3Client.get("bucket", "key", MultiMap.caseInsensitiveMultiMap(),
+        s3Client.getObject("bucket", "key", new GetObjectRequest(),
                 (result) -> {
                     testContext.fail("Exceptions should be thrown");
                 },
@@ -138,7 +141,7 @@ public abstract class AbstractS3ClientTest extends AbstractFunctionalTest {
         );
     }
 
-    void mockPut(Header... expectedHeaders) throws IOException {
+    void mockPutObject(Header... expectedHeaders) throws IOException {
         mock(
                 Collections.emptyMap(),
                 "PUT",
@@ -150,7 +153,7 @@ public abstract class AbstractS3ClientTest extends AbstractFunctionalTest {
         );
     }
 
-    void mockPutErrorResponse(Header... expectedHeaders) throws IOException {
+    void mockPutObjectErrorResponse(Header... expectedHeaders) throws IOException {
         mock(
                 Collections.emptyMap(),
                 "PUT",
@@ -162,10 +165,10 @@ public abstract class AbstractS3ClientTest extends AbstractFunctionalTest {
         );
     }
 
-    void verifyPut(final TestContext testContext) {
+    void verifyPutObject(final TestContext testContext) {
 
         final Async async = testContext.async();
-        s3Client.put("bucket", "key", MultiMap.caseInsensitiveMultiMap(),
+        s3Client.putObject("bucket", "key", new PutObjectRequest(),
                 Buffer.buffer("test"),
                 (response) -> {
                     assertThat(testContext, response.statusCode(), is(200));
@@ -179,10 +182,10 @@ public abstract class AbstractS3ClientTest extends AbstractFunctionalTest {
                 testContext::fail);
     }
 
-    void verifyPutErrorResponse(final TestContext testContext) {
+    void verifyPutObjectErrorResponse(final TestContext testContext) {
 
         final Async async = testContext.async();
-        s3Client.put("bucket", "key", MultiMap.caseInsensitiveMultiMap(),
+        s3Client.putObject("bucket", "key", new PutObjectRequest(),
                 Buffer.buffer("test"),
                 (result) -> {
                     testContext.fail("Exceptions should be thrown");
@@ -198,7 +201,7 @@ public abstract class AbstractS3ClientTest extends AbstractFunctionalTest {
         );
     }
 
-    void mockDelete(Header... expectedHeaders) throws IOException {
+    void mockDeleteObject(Header... expectedHeaders) throws IOException {
         mock(
                 Collections.emptyMap(),
                 "DELETE",
@@ -209,7 +212,7 @@ public abstract class AbstractS3ClientTest extends AbstractFunctionalTest {
         );
     }
 
-    void mockDeleteErrorResponse(Header... expectedHeaders) throws IOException {
+    void mockDeleteObjectErrorResponse(Header... expectedHeaders) throws IOException {
         mock(
                 Collections.emptyMap(),
                 "DELETE",
@@ -220,10 +223,10 @@ public abstract class AbstractS3ClientTest extends AbstractFunctionalTest {
         );
     }
 
-    void verifyDelete(final TestContext testContext) {
+    void verifyDeleteObject(final TestContext testContext) {
 
         final Async async = testContext.async();
-        s3Client.delete("bucket", "key",
+        s3Client.deleteObject("bucket", "key", new DeleteObjectRequest(),
                 (response) -> {
                     assertThat(testContext, response.statusCode(), is(200));
 
@@ -236,11 +239,11 @@ public abstract class AbstractS3ClientTest extends AbstractFunctionalTest {
                 testContext::fail);
     }
 
-    void verifyDeleteErrorResponse(final TestContext testContext) {
+    void verifyDeleteObjectErrorResponse(final TestContext testContext) {
 
         final Async async = testContext.async();
-        s3Client.delete(
-                "bucket", "key",
+        s3Client.deleteObject(
+                "bucket", "key", new DeleteObjectRequest(),
                 (result) -> {
                     testContext.fail("Exceptions should be thrown");
                 },
@@ -255,7 +258,7 @@ public abstract class AbstractS3ClientTest extends AbstractFunctionalTest {
         );
     }
 
-    void mockCopy(Header... expectedHeaders) throws IOException {
+    void mockCopyObject(Header... expectedHeaders) throws IOException {
         mock(
                 Collections.emptyMap(),
                 "PUT",
@@ -266,7 +269,7 @@ public abstract class AbstractS3ClientTest extends AbstractFunctionalTest {
         );
     }
 
-    void mockCopyErrorResponse(Header... expectedHeaders) throws IOException {
+    void mockCopyObjectErrorResponse(Header... expectedHeaders) throws IOException {
         mock(
                 Collections.emptyMap(),
                 "PUT",
@@ -277,12 +280,13 @@ public abstract class AbstractS3ClientTest extends AbstractFunctionalTest {
         );
     }
 
-    void verifyCopy(final TestContext testContext) {
+    void verifyCopyObject(final TestContext testContext) {
 
         final Async async = testContext.async();
-        s3Client.copy(
+        s3Client.copyObject(
                 "sourceBucket", "sourceKey",
                 "destinationBucket", "destinationKey",
+                new CopyObjectRequest(),
                 (response) -> {
                     assertThat(testContext, response.statusCode(), is(200));
 
@@ -295,12 +299,13 @@ public abstract class AbstractS3ClientTest extends AbstractFunctionalTest {
                 testContext::fail);
     }
 
-    void verifyCopyErrorResponse(final TestContext testContext) {
+    void verifyCopyObjectErrorResponse(final TestContext testContext) {
 
         final Async async = testContext.async();
-        s3Client.copy(
+        s3Client.copyObject(
                 "sourceBucket", "sourceKey",
                 "destinationBucket", "destinationKey",
+                new CopyObjectRequest(),
                 (result) -> {
                     testContext.fail("Exceptions should be thrown");
                 },
@@ -315,7 +320,7 @@ public abstract class AbstractS3ClientTest extends AbstractFunctionalTest {
         );
     }
 
-    void mockListBucket(Map<String, List<String>> expectedQueryParams, Header... expectedHeaders) throws IOException {
+    void mockGetBucket(Map<String, List<String>> expectedQueryParams, Header... expectedHeaders) throws IOException {
         mock(
                 expectedQueryParams,
                 "GET",
@@ -326,7 +331,7 @@ public abstract class AbstractS3ClientTest extends AbstractFunctionalTest {
         );
     }
 
-    void mockListBucketErrorResponse(Map<String, List<String>> expectedQueryParams, Header... expectedHeaders) throws IOException {
+    void mockGetBucketErrorResponse(Map<String, List<String>> expectedQueryParams, Header... expectedHeaders) throws IOException {
         mock(
                 expectedQueryParams,
                 "GET",
@@ -337,17 +342,17 @@ public abstract class AbstractS3ClientTest extends AbstractFunctionalTest {
         );
     }
 
-    void verifyListBucket(final TestContext testContext) {
+    void verifyGetBucket(final TestContext testContext) {
 
         final Async async = testContext.async();
-        s3Client.listBucket(
+        s3Client.getBucket(
                 "sourceBucket",
-                new ListBucketRequest()
+                new GetBucketRequest()
                         .withContinuationToken("14HF6Dfbr92F1EYlZIrMwxPYKQl5lD/mbwiw5+Nlrn1lYIZX3YGzo16Dgz+dxbxFeNGmLsnzwnbbuQM0CMl0krVwh8TBj8nCmNtq/iQCK6gzln8z3U4C71Mh2HyEMHcMgrZGR/akosVql7/AIctj6rA=="),
-                (listBucketResult) -> {
-                    assertThat(testContext, listBucketResult, notNullValue());
-                    assertThat(testContext, listBucketResult.getContentsList(), hasSize(5));
-                    assertThat(testContext, listBucketResult.getName(), is("bucket"));
+                (getBucketRespone) -> {
+                    assertThat(testContext, getBucketRespone, notNullValue());
+                    assertThat(testContext, getBucketRespone.getContentsList(), hasSize(5));
+                    assertThat(testContext, getBucketRespone.getName(), is("bucket"));
 
                     async.complete();
                 },
@@ -355,12 +360,12 @@ public abstract class AbstractS3ClientTest extends AbstractFunctionalTest {
         );
     }
 
-    void verifyListBucketErrorResponse(final TestContext testContext) {
+    void verifyGetBucketErrorResponse(final TestContext testContext) {
 
         final Async async = testContext.async();
-        s3Client.listBucket(
+        s3Client.getBucket(
                 "sourceBucket",
-                new ListBucketRequest()
+                new GetBucketRequest()
                         .withContinuationToken("14HF6Dfbr92F1EYlZIrMwxPYKQl5lD/mbwiw5+Nlrn1lYIZX3YGzo16Dgz+dxbxFeNGmLsnzwnbbuQM0CMl0krVwh8TBj8nCmNtq/iQCK6gzln8z3U4C71Mh2HyEMHcMgrZGR/akosVql7/AIctj6rA=="),
                 (result) -> {
                     testContext.fail("Exceptions should be thrown");
