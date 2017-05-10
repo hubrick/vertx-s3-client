@@ -56,7 +56,7 @@ public class AWS4SignatureBuilder {
 
     private final static Pattern QUERY_STRING_MATCHING_PATTERN = Pattern.compile("([^=]+)=?([^&]*)&?");
     private final static String DEFAULT_ALGORITHM = "AWS4-HMAC-SHA256";
-    private final static DateTimeFormatter SIGNATURE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmssX");
+    private final static DateTimeFormatter SIGNATURE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'");
     private final static DateTimeFormatter CREDENTIAL_SCOPE_DATE = DateTimeFormatter.ofPattern("yyyyMMdd");
     private final static String CREDENTIAL_SCOPE_TERMINATION_STRING = "aws4_request";
     private final static String ESCAPE_SAFE_CHARACTERS = "-_.*~";

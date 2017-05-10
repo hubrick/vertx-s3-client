@@ -84,7 +84,7 @@ public class S3Client {
     private final boolean signPayload;
 
     public S3Client(Vertx vertx, S3ClientOptions s3ClientOptions) {
-        this(vertx, s3ClientOptions, Clock.systemDefaultZone());
+        this(vertx, s3ClientOptions, Clock.systemUTC());
     }
 
     public S3Client(Vertx vertx, S3ClientOptions s3ClientOptions, Clock clock) {
