@@ -41,19 +41,7 @@ import com.hubrick.vertx.s3.model.header.HeadObjectResponseHeaders;
 import com.hubrick.vertx.s3.model.header.InitMultipartUploadResponseHeaders;
 import com.hubrick.vertx.s3.model.header.PutObjectResponseHeaders;
 import com.hubrick.vertx.s3.model.header.ServerSideEncryptionResponseHeaders;
-import com.hubrick.vertx.s3.model.request.AbortMultipartUploadRequest;
-import com.hubrick.vertx.s3.model.request.AclHeadersRequest;
-import com.hubrick.vertx.s3.model.request.AdaptiveUploadRequest;
-import com.hubrick.vertx.s3.model.request.CompleteMultipartUploadRequest;
-import com.hubrick.vertx.s3.model.request.ContinueMultipartUploadRequest;
-import com.hubrick.vertx.s3.model.request.CopyObjectRequest;
-import com.hubrick.vertx.s3.model.request.DeleteObjectRequest;
-import com.hubrick.vertx.s3.model.request.GetBucketRequest;
-import com.hubrick.vertx.s3.model.request.GetObjectRequest;
-import com.hubrick.vertx.s3.model.request.HeadObjectRequest;
-import com.hubrick.vertx.s3.model.request.InitMultipartUploadRequest;
-import com.hubrick.vertx.s3.model.request.PutObjectAclRequest;
-import com.hubrick.vertx.s3.model.request.PutObjectRequest;
+import com.hubrick.vertx.s3.model.request.*;
 import com.hubrick.vertx.s3.model.response.CompleteMultipartUploadResponse;
 import com.hubrick.vertx.s3.model.response.CopyObjectResponse;
 import com.hubrick.vertx.s3.model.response.ErrorResponse;
@@ -222,6 +210,31 @@ public class S3Client {
         request.end();
     }
 
+    public void getObjectSse(String bucket,
+                          String key,
+                          GetObjectRequest getObjectRequest,
+                          SseHeadersRequest sseHeadersRequest,
+                          Handler<Response<GetObjectResponseHeaders, ReadStream<Buffer>>> handler,
+                          Handler<Throwable> exceptionHandler) {
+        checkNotNull(StringUtils.trimToNull(bucket), "bucket must not be null");
+        checkNotNull(StringUtils.trimToNull(key), "key must not be null");
+        checkNotNull(getObjectRequest, "getObjectRequest must not be null");
+        checkNotNull(sseHeadersRequest, "sseHeadersRequest must not be null");
+        checkNotNull(handler, "handler must not be null");
+        checkNotNull(exceptionHandler, "exceptionHandler must not be null");
+
+        final S3ClientRequest request = createGetSseRequest(
+                bucket,
+                key,
+                getObjectRequest,
+                Optional.ofNullable(sseHeadersRequest),
+                new StreamResponseHandler("getObjectSse", jaxbUnmarshaller, new GetResponseHeadersMapper(), handler, exceptionHandler)
+        );
+        request.exceptionHandler(exceptionHandler);
+        request.end();
+    }
+
+
     public void headObject(String bucket,
                            String key,
                            HeadObjectRequest headObjectRequest,
@@ -295,6 +308,30 @@ public class S3Client {
         } else {
             request.end();
         }
+    }
+
+    public void putObjectSse(String bucket,
+                          String key,
+                          PutObjectRequest putObjectRequest,
+                          SseHeadersRequest sseHeadersRequest,
+                          Handler<Response<PutObjectResponseHeaders, Void>> handler,
+                          Handler<Throwable> exceptionHandler) {
+        checkNotNull(StringUtils.trimToNull(bucket), "bucket must not be null");
+        checkNotNull(StringUtils.trimToNull(key), "key must not be null");
+        checkNotNull(putObjectRequest, "putObjectRequest must not be null");
+        checkNotNull(sseHeadersRequest, "sseHeadersRequest must not be null");
+        checkNotNull(handler, "handler must not be null");
+        checkNotNull(exceptionHandler, "exceptionHandler must not be null");
+
+        final S3ClientRequest request = createPutSseRequest(
+                bucket,
+                key,
+                putObjectRequest,
+                Optional.ofNullable(sseHeadersRequest),
+                new HeadersResponseHandler("putObjectSse", jaxbUnmarshaller, new PutResponseHeadersMapper(), handler, exceptionHandler, false)
+        );
+        request.exceptionHandler(exceptionHandler);
+        request.end(putObjectRequest.getData());
     }
 
     /**
@@ -638,6 +675,16 @@ public class S3Client {
         return s3ClientRequest;
     }
 
+    private S3ClientRequest createPutSseRequest(String bucket,
+                                                String key,
+                                                PutObjectRequest putObjectRequest,
+                                                Optional<SseHeadersRequest> sseHeadersRequest,
+                                                Handler<HttpClientResponse> handler) {
+        final S3ClientRequest s3ClientRequest = createPutRequest(bucket, key, putObjectRequest, handler);
+        sseHeadersRequest.ifPresent(e -> s3ClientRequest.headers().addAll(populateSseHeadersRequest(e)));
+        return s3ClientRequest;
+    }
+
     private S3ClientRequest createPutAclRequest(String bucket,
                                                 String key,
                                                 Optional<AclHeadersRequest> aclHeadersRequest,
@@ -719,6 +766,22 @@ public class S3Client {
         }
         if (StringUtils.trimToNull(aclHeadersRequest.getAmzGrantFullControl()) != null) {
             headers.add(Headers.X_AMZ_GRANT_FULL_CONTROL, StringUtils.trim(aclHeadersRequest.getAmzGrantFullControl()));
+        }
+
+        return headers;
+    }
+
+    private MultiMap populateSseHeadersRequest(SseHeadersRequest sseHeadersRequest) {
+        final MultiMap headers = MultiMap.caseInsensitiveMultiMap();
+
+        if (StringUtils.trimToNull(sseHeadersRequest.getAmzServerSideEncryptionCustomerAlgorithm()) != null) {
+            headers.add(Headers.X_AMZ_SERVER_SIDE_ENCRYPTION_CUSTOMER_ALGORITHM, StringUtils.trim(sseHeadersRequest.getAmzServerSideEncryptionCustomerAlgorithm()));
+        }
+        if (StringUtils.trimToNull(sseHeadersRequest.getAmzServerSideEncryptionCustomerKey()) != null) {
+            headers.add(Headers.X_AMZ_SERVER_SIDE_ENCRYPTION_CUSTOMER_KEY, StringUtils.trim(sseHeadersRequest.getAmzServerSideEncryptionCustomerKey()));
+        }
+        if (StringUtils.trimToNull(sseHeadersRequest.getAmzServerSideEncryptionCustomerKeyMD5()) != null) {
+            headers.add(Headers.X_AMZ_SERVER_SIDE_ENCRYPTION_CUSTOMER_KEY_MD5, StringUtils.trim(sseHeadersRequest.getAmzServerSideEncryptionCustomerKeyMD5()));
         }
 
         return headers;
@@ -977,6 +1040,30 @@ public class S3Client {
                 .putHeader(Headers.HOST, hostname);
 
         s3ClientRequest.headers().addAll(populateGetObjectHeaders(getObjectRequest));
+        return s3ClientRequest;
+    }
+
+    private S3ClientRequest createGetSseRequest(String bucket,
+                                             String key,
+                                             GetObjectRequest getObjectRequest,
+                                             Optional<SseHeadersRequest> sseHeadersRequest,
+                                             Handler<HttpClientResponse> handler) {
+        final HttpClientRequest httpRequest = client.get(UrlEncodingUtils.addParamsSortedToUrl("/" + bucket + "/" + key, populateGetObjectQueryParams(getObjectRequest)), handler);
+        final S3ClientRequest s3ClientRequest = new S3ClientRequest(
+                "GET",
+                awsRegion,
+                awsServiceName,
+                httpRequest,
+                awsAccessKey,
+                awsSecretKey,
+                clock,
+                signPayload
+        )
+                .setTimeout(globalTimeout)
+                .putHeader(Headers.HOST, hostname);
+
+        s3ClientRequest.headers().addAll(populateGetObjectHeaders(getObjectRequest));
+        sseHeadersRequest.ifPresent(e -> s3ClientRequest.headers().addAll(populateSseHeadersRequest(e)));
         return s3ClientRequest;
     }
 
@@ -1463,10 +1550,10 @@ public class S3Client {
     }
 
     private void populateServerSideEncryptionResponseHeaders(MultiMap headers, ServerSideEncryptionResponseHeaders serverSideEncryptionResponseHeaders) {
-        serverSideEncryptionResponseHeaders.setAmzServerSideEncription(Optional.ofNullable(headers.get(Headers.X_AMZ_SERVER_SIDE_ENCRYPTION)).filter(StringUtils::isNotBlank).orElse(null));
-        serverSideEncryptionResponseHeaders.setAmzServerSideEncriptionAwsKmsKeyId(Optional.ofNullable(headers.get(Headers.X_AMZ_SERVER_SIDE_ENCRYPTION_AWS_KMS_KEY_ID)).filter(StringUtils::isNotBlank).orElse(null));
-        serverSideEncryptionResponseHeaders.setAmzServerSideEncriptionCustomerAlgorithm(Optional.ofNullable(headers.get(Headers.X_AMZ_SERVER_SIDE_ENCRYPTION_CUSTOMER_ALGORITHM)).filter(StringUtils::isNotBlank).orElse(null));
-        serverSideEncryptionResponseHeaders.setAmzServerSideEncriptionCustomerKeyMD5(Optional.ofNullable(headers.get(Headers.X_AMZ_SERVER_SIDE_ENCRYPTION_CUSTOMER_KEY_MD5)).filter(StringUtils::isNotBlank).orElse(null));
+        serverSideEncryptionResponseHeaders.setAmzServerSideEncryption(Optional.ofNullable(headers.get(Headers.X_AMZ_SERVER_SIDE_ENCRYPTION)).filter(StringUtils::isNotBlank).orElse(null));
+        serverSideEncryptionResponseHeaders.setAmzServerSideEncryptionAwsKmsKeyId(Optional.ofNullable(headers.get(Headers.X_AMZ_SERVER_SIDE_ENCRYPTION_AWS_KMS_KEY_ID)).filter(StringUtils::isNotBlank).orElse(null));
+        serverSideEncryptionResponseHeaders.setAmzServerSideEncryptionCustomerAlgorithm(Optional.ofNullable(headers.get(Headers.X_AMZ_SERVER_SIDE_ENCRYPTION_CUSTOMER_ALGORITHM)).filter(StringUtils::isNotBlank).orElse(null));
+        serverSideEncryptionResponseHeaders.setAmzServerSideEncryptionCustomerKeyMD5(Optional.ofNullable(headers.get(Headers.X_AMZ_SERVER_SIDE_ENCRYPTION_CUSTOMER_KEY_MD5)).filter(StringUtils::isNotBlank).orElse(null));
     }
 
     private void populateCommonResponseHeaders(MultiMap headers, CommonResponseHeaders commonResponseHeaders) {
