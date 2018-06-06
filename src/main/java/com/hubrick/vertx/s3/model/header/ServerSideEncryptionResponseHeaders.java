@@ -21,40 +21,40 @@ package com.hubrick.vertx.s3.model.header;
  */
 public class ServerSideEncryptionResponseHeaders extends CommonResponseHeaders {
 
-    private String amzServerSideEncription;
-    private String amzServerSideEncriptionAwsKmsKeyId;
-    private String amzServerSideEncriptionCustomerAlgorithm;
-    private String amzServerSideEncriptionCustomerKeyMD5;
+    private String amzServerSideEncryption;
+    private String amzServerSideEncryptionAwsKmsKeyId;
+    private String amzServerSideEncryptionCustomerAlgorithm;
+    private String amzServerSideEncryptionCustomerKeyMD5;
 
-    public String getAmzServerSideEncription() {
-        return amzServerSideEncription;
+    public String getAmzServerSideEncryption() {
+        return amzServerSideEncryption;
     }
 
-    public void setAmzServerSideEncription(String amzServerSideEncription) {
-        this.amzServerSideEncription = amzServerSideEncription;
+    public void setAmzServerSideEncryption(String amzServerSideEncryption) {
+        this.amzServerSideEncryption = amzServerSideEncryption;
     }
 
-    public String getAmzServerSideEncriptionAwsKmsKeyId() {
-        return amzServerSideEncriptionAwsKmsKeyId;
+    public String getAmzServerSideEncryptionAwsKmsKeyId() {
+        return amzServerSideEncryptionAwsKmsKeyId;
     }
 
-    public void setAmzServerSideEncriptionAwsKmsKeyId(String amzServerSideEncriptionAwsKmsKeyId) {
-        this.amzServerSideEncriptionAwsKmsKeyId = amzServerSideEncriptionAwsKmsKeyId;
+    public void setAmzServerSideEncryptionAwsKmsKeyId(String amzServerSideEncryptionAwsKmsKeyId) {
+        this.amzServerSideEncryptionAwsKmsKeyId = amzServerSideEncryptionAwsKmsKeyId;
     }
 
-    public String getAmzServerSideEncriptionCustomerAlgorithm() {
-        return amzServerSideEncriptionCustomerAlgorithm;
+    public String getAmzServerSideEncryptionCustomerAlgorithm() {
+        return amzServerSideEncryptionCustomerAlgorithm;
     }
 
-    public void setAmzServerSideEncriptionCustomerAlgorithm(String amzServerSideEncriptionCustomerAlgorithm) {
-        this.amzServerSideEncriptionCustomerAlgorithm = amzServerSideEncriptionCustomerAlgorithm;
+    public void setAmzServerSideEncryptionCustomerAlgorithm(String amzServerSideEncryptionCustomerAlgorithm) {
+        this.amzServerSideEncryptionCustomerAlgorithm = amzServerSideEncryptionCustomerAlgorithm;
     }
 
-    public String getAmzServerSideEncriptionCustomerKeyMD5() {
-        return amzServerSideEncriptionCustomerKeyMD5;
+    public String getAmzServerSideEncryptionCustomerKeyMD5() {
+        return amzServerSideEncryptionCustomerKeyMD5;
     }
 
-    public void setAmzServerSideEncriptionCustomerKeyMD5(String amzServerSideEncriptionCustomerKeyMD5) {
-        this.amzServerSideEncriptionCustomerKeyMD5 = amzServerSideEncriptionCustomerKeyMD5;
+    public void setAmzServerSideEncryptionCustomerKeyMD5(String amzServerSideEncryptionCustomerKeyMD5) {
+        this.amzServerSideEncryptionCustomerKeyMD5 = amzServerSideEncryptionCustomerKeyMD5;
     }
 }

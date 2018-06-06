@@ -64,6 +64,7 @@ public class Headers {
     public static final String X_AMZ_SERVER_SIDE_ENCRYPTION = "x-amz-server-side-encryption";
     public static final String X_AMZ_SERVER_SIDE_ENCRYPTION_AWS_KMS_KEY_ID = "x-amz-server-side-encryption-aws-kms-key-id";
     public static final String X_AMZ_SERVER_SIDE_ENCRYPTION_CUSTOMER_ALGORITHM = "x-amz-server-side-encryption-customer-algorithm";
+    public static final String X_AMZ_SERVER_SIDE_ENCRYPTION_CUSTOMER_KEY = "X-Amz-Server-Side-Encryption-Customer-Key";
     public static final String X_AMZ_SERVER_SIDE_ENCRYPTION_CUSTOMER_KEY_MD5 = "x-amz-server-side-encryption-customer-key-MD5";
     public static final String X_AMZ_STORAGE_CLASS = "x-amz-storage-class";
     public static final String X_AMZ_TAGGING_COUNT = "x-amz-tagging-count";

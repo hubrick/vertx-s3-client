@@ -83,7 +83,7 @@ public abstract class AbstractS3ClientTest extends AbstractFunctionalTest {
 
     public static final String HOSTNAME = "localhost";
 
-    private S3Client s3Client;
+    protected S3Client s3Client;
 
     @Before
     public void setUp() throws Exception {

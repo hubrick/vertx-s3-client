@@ -95,6 +95,34 @@ A fully functional Vert.x client for S3
                 response -> System.out.println("Response from AWS: " + response.getData().getName()),
                 Throwable::printStackTrace
         );
+        
+        // putObject with server-side-encryption
+        s3Client.putObjectSse(
+                S3_BUCKET_NAME,
+                KEY_ENCRYPTED,
+                new PutObjectRequest(Buffer.buffer(TEST_FILE_CONTENT))
+                        .withContentType(TEXT_PLAIN),
+                new SseHeadersRequest<>()
+                        .withAmzServerSideEncryptionCustomerAlgorithm(AES_256)
+                        .withAmzServerSideEncryptionCustomerKey(SSE_KEY)
+                        .withAmzServerSideEncryptionCustomerKeyMD5(SSE_KEY_MD5),
+                response -> System.out.println("Response from AWS: " + response.getHeader().getContentType()),
+                Throwable::printStackTrace
+        );
+
+        // getObject with server-side-encryption
+        s3Client.getObjectSse(
+                S3_BUCKET_NAME,
+                KEY_ENCRYPTED,
+                new GetObjectRequest()
+                        .withResponseContentType(TEXT_PLAIN),
+                new SseHeadersRequest<>()
+                        .withAmzServerSideEncryptionCustomerAlgorithm(AES_256)
+                        .withAmzServerSideEncryptionCustomerKey(SSE_KEY)
+                        .withAmzServerSideEncryptionCustomerKeyMD5(SSE_KEY_MD5),
+                response -> System.out.println("Response from AWS: " + response.getHeader().getContentType()),
+                Throwable::printStackTrace
+        );
 ```
 
 ### Multipart upload
